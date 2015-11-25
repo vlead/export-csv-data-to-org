@@ -1,0 +1,66 @@
+#+TITLE: Exporter
+#+AUTHOR: VLEAD
+#+DATE: [2015-11-25 Wed]
+#+PROPERTY: results output
+#+PROPERTY: exports code
+#+SETUPFILE: ./org-templates/level-0.org
+#+options: ^:nil
+
+
+* Introduction
+  Outreach portal keeps track of all the outreach activities done to
+  promote Virtual Labs. It also acts as a central place where all the
+  documents related to workshops/trainings are stored.
+
+* Requirements
+  1. Outreach portal has three types of users: Admin, Outreach coordinator and
+     Nodal coordinator.
+  2. Admin adds, updates and deletes an outreach coordinator.
+  3. An outreach coordinator adds, updates and deletes an nodal coordinator.
+  4. Documents
+     1. Admin adds and deletes a set of documents. For the format of the
+        documents refer scenarios [[./outreach-portal-scenarios.org::#document_formats][document]].
+     2. Outreach coordinator views and downloads the documents uploaded by
+        admin.
+     3. Outreach coordinator adds and deletes his/her set of documents. 
+     4. Nodal coordinator views and downloads the documents uploaded both by
+        the Admin and his/her respective outreach coordinator.
+  5. Dashboard
+     1. Admin has a Dashboard. For ontents of the dashboard refer [[./outreach-portal-scenarios.org::#admin_dashboard][here]]
+     2. Outreach coordinator has a dashboard
+     3. Nodal coordinator has a dashboard.
+  6. Outreach coordinator adds, updates and deletes an nodal coordinator.
+  7. Outreach coordinator creates, updates and completes a workshop that is
+     done in the past.
+  8. Outreach coordinator creates, updates and completes an upcoming workshop.
+  9. Outreach coordinator uploads a set of documents to complete a
+     workshop. For the document list refer to scenarios [[./outreach-portal-scenarios.org::#workshop_documents][document]].  
+  10. Outreach coordinator edits workshops created by nodal coordinator.
+  11. Outreach coordinator approves the workshops conducted by nodal coordinator.
+  12. Outreach coordinator views workshop history.
+  13. Nodal coordinator creates a workshop. 
+  14. Nodal coordinator uploads workshop documents for approval by outreach
+      coordinator or cancels a workshop. 
+  15. Nodal coordinator views the workshop history. 
+
+* Design & Implementation  
+** High Level Design
+#+CAPTION: High Level Design Diagram
+  [[./diagrams/outreach.svg]]
+** [[./frontend.org][View & Controller]]
+** [[./backend.org][REST API & DB Layer]]
+* Test Cases
+* Provisioning
+* Releases
+** Admin Release - v2.1.0
+   This release will satisfy requirements 2, 4.1, 5.1
+   Release Date :: [2015-11-13 Fri]
+   The release data is moved to [2015-11-20 Fri].
+** Nodal Coordinator Release - v2.2.0
+   This release will satisfy requirements  4.4, 5.3, 13, 14, 15
+   Release Date :: [2015-11-27 Fri]
+** Outreach Coordinator Release - v2.3.0
+   This release will satisfy requirements 3, 4.2, 4.3, 5.2, 6, 7, 8, 9, 10, 11
+   and 12
+   Release Date :: [2015-12-04 Fri]
+
