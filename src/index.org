@@ -1,4 +1,4 @@
-#+TITLE: Exporter
+#+TITLE: Exporter Program to convert data form csv to org format
 #+AUTHOR: VLEAD
 #+DATE: [2015-11-25 Wed]
 #+PROPERTY: results output
@@ -8,59 +8,117 @@
 
 
 * Introduction
-  Outreach portal keeps track of all the outreach activities done to
-  promote Virtual Labs. It also acts as a central place where all the
-  documents related to workshops/trainings are stored.
+  Exporter program exports data from csv format to org format. The
+  program is written in python language.
 
 * Requirements
-  1. Outreach portal has three types of users: Admin, Outreach coordinator and
-     Nodal coordinator.
-  2. Admin adds, updates and deletes an outreach coordinator.
-  3. An outreach coordinator adds, updates and deletes an nodal coordinator.
-  4. Documents
-     1. Admin adds and deletes a set of documents. For the format of the
-        documents refer scenarios [[./outreach-portal-scenarios.org::#document_formats][document]].
-     2. Outreach coordinator views and downloads the documents uploaded by
-        admin.
-     3. Outreach coordinator adds and deletes his/her set of documents. 
-     4. Nodal coordinator views and downloads the documents uploaded both by
-        the Admin and his/her respective outreach coordinator.
-  5. Dashboard
-     1. Admin has a Dashboard. For ontents of the dashboard refer [[./outreach-portal-scenarios.org::#admin_dashboard][here]]
-     2. Outreach coordinator has a dashboard
-     3. Nodal coordinator has a dashboard.
-  6. Outreach coordinator adds, updates and deletes an nodal coordinator.
-  7. Outreach coordinator creates, updates and completes a workshop that is
-     done in the past.
-  8. Outreach coordinator creates, updates and completes an upcoming workshop.
-  9. Outreach coordinator uploads a set of documents to complete a
-     workshop. For the document list refer to scenarios [[./outreach-portal-scenarios.org::#workshop_documents][document]].  
-  10. Outreach coordinator edits workshops created by nodal coordinator.
-  11. Outreach coordinator approves the workshops conducted by nodal coordinator.
-  12. Outreach coordinator views workshop history.
-  13. Nodal coordinator creates a workshop. 
-  14. Nodal coordinator uploads workshop documents for approval by outreach
-      coordinator or cancels a workshop. 
-  15. Nodal coordinator views the workshop history. 
+  1. Each test case is a file in a specified format.
+  2. All test cases in the excel file are converted to the specified
+     format.
+  3. A directory is created for each experiment and test cases files
+     are placed inside it.
 
-* Design & Implementation  
-** High Level Design
-#+CAPTION: High Level Design Diagram
-  [[./diagrams/outreach.svg]]
-** [[./frontend.org][View & Controller]]
-** [[./backend.org][REST API & DB Layer]]
+* Design & Implementation
+** Input format
+#+begin_example
+|---------------------+-----------------+-------------------+----------------+------------------+----------------------+-----------------------------------+----------------------+------------+-------------------+-------------------------------------------------+--------------------------------+-------------+------------+-----------+-----------------------|
+| *Lab Name*          | *Experiment ID* | *Requirements*    | *Test Step ID* | *Test Case Type* | *Test Description*   | *Test Steps*                      | *Expected Result*    | *Status*   | *Test Case Owner* | *Pre/Post Conditions*                           | *Data/Environment*             | *Dev Owner* | *Reviewed* | *History* | *Additional Comments* |
+|---------------------+-----------------+-------------------+----------------+------------------+----------------------+-----------------------------------+----------------------+------------+-------------------+-------------------------------------------------+--------------------------------+-------------+------------+-----------+-----------------------|
+| Problem Solving Lab |                 | User friendliness |              1 | Usability        | Experiment should be | While testing observe             | Experiment should be | Inprogress | Nihanth           | 1. Open the url vlabs.ac.in and                 | OS: Windows7, Linux            |             |            |           |                       |
+|                     |                 | of the Experiment |                |                  | easily usable        | for easiness to use the           | user friendly        |            |                   | vlabs home page will be displayed.              | Browsers: Firefox,             |             |            |           | Missed out test cases |
+|                     |                 |                   |                |                  |                      | features of the experiment        |                      |            |                   | 2. Click on IIIT-Hyderabad and a list           | Chrome                         |             |            |           | on the landing page.  |
+|                     |                 |                   |                |                  |                      |                                   |                      |            |                   | of labs will be displayed on the screen         | Bandwidth: 100 Mbps            |             |            |           |                       |
+|                     |                 |                   |                |                  |                      | Information to use the experiment |                      |            |                   | 3. Select Problem Solving Lab, a home page      | Hardware Configuration: 8GBRAM |             |            |           |                       |
+|                     |                 |                   |                |                  |                      | Navigation Look and Feel Speed    |                      |            |                   | will be displayed and click on List of          | Processor: i5                  |             |            |           |                       |
+|                     |                 |                   |                |                  |                      |                                   |                      |            |                   | experiments link, where a list of experiments   |                                |             |            |           |                       |
+|                     |                 |                   |                |                  |                      |                                   |                      |            |                   | will be displayed on the screen                 |                                |             |            |           |                       |
+|                     |                 |                   |                |                  |                      |                                   |                      |            |                   | 4. Select "Numerical Representation experiment" |                                |             |            |           |                       |
+|---------------------+-----------------+-------------------+----------------+------------------+----------------------+-----------------------------------+----------------------+------------+-------------------+-------------------------------------------------+--------------------------------+-------------+------------+-----------+-----------------------|
+#+end_example
+
+** Output format
+#+begin_example
+Author :
+Date Created :
+Environment : 
+Objective :
+Pre/Post conditions :
+Test Steps :
+    step-1  
+    step-2 ...
+Test Data :
+Expected result :
+Reviews/Comments  :
+#+end_example
+
+** Design 
+#+begin_example
+import xlrd
+import os
+import sys
+import re
+
+#----------------------------------------------------------------------
+def open_file(path, labName):
+    book = xlrd.open_workbook(path)
+    number_of_sheets = book.nsheets
+    parentDirectory = os.path.dirname(path)
+    sheetNames = book.sheet_names()
+    directory = parentDirectory + "/" + labName
+    if not os.path.exists(directory):
+            os.makedirs(directory)
+    parentDirectory = directory
+    for sheetIndex in range(number_of_sheets):
+        directory = parentDirectory + "/exp" + str(sheetIndex+1)
+        if not os.path.exists(directory):
+            os.makedirs(directory)
+        sheet = book.sheet_by_index(sheetIndex)
+        totalRows = sheet.nrows
+        for row in range(1, totalRows):
+            fileName = directory + "/" + sheetNames[sheetIndex] + "_Experiment_" + str(row) + ".org"
+            file = open(fileName, 'w')
+            author = "* Author : " + sheet.cell(row,9).value + "\n"
+            environment = "* Environment \n" + sheet.cell(row,11).value + "\n"
+            conditions = "* Pre/Post conditions \n" + sheet.cell(row,10).value + "\n"
+            testSteps = "* Test Steps \n" + sheet.cell(row,6).value + "\n"
+            result = "* Expected result \n" + sheet.cell(row,7).value + "\n"
+            file.write(author.encode("utf-8"))
+            file.write(environment.encode("utf-8"))
+            file.write(conditions.encode("utf-8"))
+            file.write(testSteps.encode("utf-8"))
+            file.write(result.encode("utf-8"))
+            file.write("\n")
+            file.close()
+
+if __name__ == "__main__":
+    exclude = set([".git", "README.md", "exp.*", "IIT Bombay"])
+#    combined = "(" + ")" + "|" .join(exclude)
+    combined = "(" + ")|(".join(exclude) + ")"
+    print combined
+    for root, dirs, files in os.walk('/home/centos/projects/QA-Legacy'):
+        dirs[:] = [d for d in dirs if not re.match(combined, d)]
+        files[:] = [f for f in files if not re.match(combined, f)]
+        print "root = ", root
+        print "dirs = ", dirs
+        print "files = ", files
+        if len(dirs) == 0:
+            for f in files:
+                path = root + "/" + f
+                print "Path = ", path
+                labName, extension = os.path.splitext(f)
+                print labName
+                open_file(path, labName)
+
+#    path = "/home/centos/projects/QA-Legacy/IIIT Hyderabad/IIIT_HYDERABAD_Problem Solving Lab.xlsx"
+#    open_file(path)
+~                     
+#+end_example
+
 * Test Cases
-* Provisioning
 * Releases
-** Admin Release - v2.1.0
-   This release will satisfy requirements 2, 4.1, 5.1
-   Release Date :: [2015-11-13 Fri]
-   The release data is moved to [2015-11-20 Fri].
-** Nodal Coordinator Release - v2.2.0
-   This release will satisfy requirements  4.4, 5.3, 13, 14, 15
-   Release Date :: [2015-11-27 Fri]
-** Outreach Coordinator Release - v2.3.0
-   This release will satisfy requirements 3, 4.2, 4.3, 5.2, 6, 7, 8, 9, 10, 11
-   and 12
-   Release Date :: [2015-12-04 Fri]
+** Release - v1.0
+   This release will satisfy all the requirements.
+   Release Date :: [2015-11-30 Mon]
+
+
 
