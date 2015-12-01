@@ -44,74 +44,138 @@ Environment :
 Objective :
 Pre/Post conditions :
 Test Steps :
-    step-1  
-    step-2 ...
-Test Data :
 Expected result :
-Reviews/Comments  :
+Reviews/Comments :
 #+end_example
 
 ** Design 
+*** Install xlrd
+#+begin_example
+pip install xlrd
+#+end_example
+
+*** Python Program
+**** Import Libraries
 #+begin_example
 import xlrd
 import os
 import sys
 import re
+import time
+#+end_example
 
-#----------------------------------------------------------------------
-def open_file(path, labName):
-    book = xlrd.open_workbook(path)
-    number_of_sheets = book.nsheets
-    parentDirectory = os.path.dirname(path)
-    sheetNames = book.sheet_names()
-    directory = parentDirectory + "/" + labName
+**** Define global variables to exclude some files
+#+begin_example
+exclude = set([".git", "README.md", "exp.*", "IIT Bombay", "Amrita"])
+combined = "(" + ")|(".join(exclude) + ")"
+#+end_example
+
+**** Create Directory
+#+begin_example
+def make_directory(directory):
     if not os.path.exists(directory):
             os.makedirs(directory)
-    parentDirectory = directory
-    for sheetIndex in range(number_of_sheets):
-        directory = parentDirectory + "/exp" + str(sheetIndex+1)
-        if not os.path.exists(directory):
-            os.makedirs(directory)
-        sheet = book.sheet_by_index(sheetIndex)
-        totalRows = sheet.nrows
-        for row in range(1, totalRows):
-            fileName = directory + "/" + sheetNames[sheetIndex] + "_Experiment_" + str(row) + ".org"
-            file = open(fileName, 'w')
-            author = "* Author : " + sheet.cell(row,9).value + "\n"
-            environment = "* Environment \n" + sheet.cell(row,11).value + "\n"
-            conditions = "* Pre/Post conditions \n" + sheet.cell(row,10).value + "\n"
-            testSteps = "* Test Steps \n" + sheet.cell(row,6).value + "\n"
-            result = "* Expected result \n" + sheet.cell(row,7).value + "\n"
-            file.write(author.encode("utf-8"))
-            file.write(environment.encode("utf-8"))
-            file.write(conditions.encode("utf-8"))
-            file.write(testSteps.encode("utf-8"))
-            file.write(result.encode("utf-8"))
-            file.write("\n")
-            file.close()
+    return
+#+end_example
 
-if __name__ == "__main__":
-    exclude = set([".git", "README.md", "exp.*", "IIT Bombay"])
-#    combined = "(" + ")" + "|" .join(exclude)
-    combined = "(" + ")|(".join(exclude) + ")"
-    print combined
-    for root, dirs, files in os.walk('/home/centos/projects/QA-Legacy'):
+**** Org Data
+#+begin_example
+def org_data(row):
+    data = {}
+    data['author'] = "* Author : " + row[10].value + "\n"
+    data['date'] = "* Date: " + time.strftime('%c') + "\n"
+    data['environment'] = "* Environment \n" + row[12].value + "\n"
+    data['objective'] = "* Objective \n" + row[6].value + "\n"
+    data['conditions'] = "* Pre/Post conditions \n" + row[11].value + "\n"
+    data['testSteps'] = "* Test Steps \n" + row[7].value + "\n"
+    data['result'] = "* Expected result \n" + row[8].value + "\n"
+    data['review_comments'] = "* Review comments \n" + row[14].value + "\n"
+    return data
+#+end_example
+
+**** Write to file
+#+begin_example
+def write_to_file(filepointer, data):
+    filepointer.write(data['author'].encode("utf-8"))
+    filepointer.write(data['date'].encode("utf-8"))
+    filepointer.write(data['environment'].encode("utf-8"))
+    filepointer.write(data['objective'].encode("utf-8"))
+    filepointer.write(data['conditions'].encode("utf-8"))
+    filepointer.write(data['testSteps'].encode("utf-8"))
+    filepointer.write(data['result'].encode("utf-8"))
+    filepointer.write(data['review_comments'].encode("utf-8"))
+    filepointer.write("\n")
+    filepointer.close()
+    return
+#+end_example
+
+**** Process Experiment
+#+begin_example
+def process_experiment(experiment, directory):
+    totalRows = experiment.nrows
+    for row in range(1, totalRows):
+        filepath = directory + "/" + experiment.name + "_" + str(row).zfill(2) + "_" +  experiment.row(row)[2].value + ".org"
+        filepointer = open(filepath, 'w')
+        data =  org_data(experiment.row(row))
+        write_to_file(filepointer, data)
+    return
+#+end_example
+
+**** Open Lab file
+#+begin_example
+def open_lab_file(path, labName):
+    book = xlrd.open_workbook(path)
+    number_of_experiments = book.nsheets
+    parentDirectory = os.path.dirname(path)
+    directory = parentDirectory + "/" + labName
+    make_directory(directory)
+    parentDirectory = directory
+
+    for expIndex in range(number_of_experiments):
+        directory = parentDirectory + "/exp" + str(expIndex+1).zfill(2)
+        make_directory(directory)
+        experiment = book.sheet_by_index(expIndex)
+        process_experiment(experiment, directory)
+    return
+#+end_example
+
+**** Single File
+#+begin_example
+def single_file(path):
+    basename = os.path.basename(path)
+    name, extension = os.path.splitext(basename)
+    open_lab_file(path, name)
+    return
+#+end_example
+
+**** Walk over path
+#+begin_example
+def walk_over_path(path):
+    for root, dirs, files in os.walk(path):
         dirs[:] = [d for d in dirs if not re.match(combined, d)]
         files[:] = [f for f in files if not re.match(combined, f)]
-        print "root = ", root
-        print "dirs = ", dirs
-        print "files = ", files
-        if len(dirs) == 0:
-            for f in files:
+        print "root = ", root; print "dirs = ", dirs; print "files = ", files
+        for f in files:
+            name, extension = os.path.splitext(f)
+            if (extension == '.xlsx'):
                 path = root + "/" + f
                 print "Path = ", path
-                labName, extension = os.path.splitext(f)
-                print labName
-                open_file(path, labName)
+                open_lab_file(path, name)
+    return
+#+end_example
 
-#    path = "/home/centos/projects/QA-Legacy/IIIT Hyderabad/IIIT_HYDERABAD_Problem Solving Lab.xlsx"
-#    open_file(path)
-~                     
+**** Main function
+#+begin_example
+if __name__ == "__main__":
+    if len(sys.argv) < 2:
+        print "Please provide the path of the file/directory within quotes in command line!"
+    else:
+        path = sys.argv[1]
+        if os.path.isfile(path):
+            single_file(path)
+        else:
+            walk_over_path(path)
+
 #+end_example
 
 * Test Cases
