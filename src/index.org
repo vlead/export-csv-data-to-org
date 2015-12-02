@@ -68,6 +68,7 @@ python exporter.py <path-to-xlsx-files>
 ** Implementation
 *** Main Function
 #+begin_src python :tangle exporter.py :eval no
+import xlrd
 import os
 import sys
 import re
@@ -88,7 +89,7 @@ def main(argv):
 #+end_src
 
 *** Process single xlsx file
-#+begin_src 
+#+begin_src python :tangle exporter.py :eval no
 def single_file(path):
     basename = os.path.basename(path)
     name, extension = os.path.splitext(basename)
@@ -97,7 +98,7 @@ def single_file(path):
 #+end_src
 
 *** Process multiple xlsx files
-#+begin_src 
+#+begin_src python :tangle exporter.py :eval no
 def walk_over_path(path):
     for root, dirs, files in os.walk(path):
         dirs[:] = [d for d in dirs if not re.match(combined, d)]
@@ -113,7 +114,7 @@ def walk_over_path(path):
 #+end_src
 
 *** Open lab file
-#+begin_src 
+#+begin_src python :tangle exporter.py :eval no
 def process_lab_file(path, labName):
     book = xlrd.open_workbook(path)
     number_of_experiments = book.nsheets
@@ -121,29 +122,23 @@ def process_lab_file(path, labName):
     directory = parentDirectory + "/" + labName
     make_directory(directory)
     parentDirectory = directory
-    count = 1
-    metaFilePath = parentDirectory + "/" + labName + "_testreport_" + time.strftime('%c') + ".org"
-    metaFilePointer = open(metaFilePath, 'w')
 
     for expIndex in range(number_of_experiments):
         directory = parentDirectory + "/exp" + str(expIndex+1).zfill(2)
         make_directory(directory)
         experiment = book.sheet_by_index(expIndex)
-        testCasesPath = process_experiment(experiment, directory)
-        count = save_link_to_test_cases(metaFilePointer, count, experiment.name, testCasesPath)
-    metaFilePointer.close()
+        process_experiment(experiment, directory)
     return
 #+end_src
 *** Make Directory
-#+begin_src 
-
+#+begin_src python :tangle exporter.py :eval no
 def make_directory(directory):
     if not os.path.exists(directory):
             os.makedirs(directory)
     return
 #+end_src
 *** Process Experiment
-#+begin_src 
+#+begin_src python :tangle exporter.py :eval no
 def process_experiment(experiment, directory):
     totalRows = experiment.nrows
     testCasesPath = []
@@ -153,13 +148,17 @@ def process_experiment(experiment, directory):
         filepointer = open(filepath, 'w')
         data =  org_data(experiment.row(row))
         write_to_file(filepointer, data)
-    return testCasesPath
+
+    metaFilePath = directory + "/" + experiment.name + "_metafile" + ".org"
+    metaFilePointer = open(metaFilePath, 'w')
+    save_link_of_test_cases(metaFilePointer, testCasesPath)
+    return
 #+end_src
 *** Convert to Org format
-#+begin_src 
+#+begin_src python :tangle exporter.py :eval no
 def org_data(row):
     data = {}
-    data['author'] = "* Author : " + row[10].value + "\n"
+    data['author'] = "* Author: " + row[10].value + "\n"
     data['date'] = "* Date Created: " + time.strftime('%c') + "\n"
     data['environment'] = "* Environment \n" + row[12].value + "\n"
     data['objective'] = "* Objective \n" + row[6].value + "\n"
@@ -170,7 +169,7 @@ def org_data(row):
     return data
 #+end_src
 *** Write org format to a file
-#+begin_src 
+#+begin_src python :tangle exporter.py :eval no
 def write_to_file(filepointer, data):
     filepointer.write(data['author'].encode("utf-8"))
     filepointer.write(data['date'].encode("utf-8"))
@@ -186,21 +185,23 @@ def write_to_file(filepointer, data):
 #+end_src
 
 *** Save links to test cases in a org file
-#+begin_src 
-def save_link_to_test_cases(filepointer, count, expName, testCasesPath):
+#+begin_src python :tangle exporter.py :eval no
+def save_link_of_test_cases(filepointer, testCasesPath):
+    count = 1
     for path in testCasesPath:
         basename = os.path.basename(path)
-        line = str(count) + ". " + expName + " " + "[[" + path + "]" + "[" + basename + "]]" + "\n"
+        line = str(count) + ". " + "\t" + "[[" + path + "]" + "[" + basename + "]]" + "\n"
         filepointer.write(line)
         count+=1
-    return count
+    filepointer.close()
+    return
 #+end_src
 
 *** Main function condition
-#+BEGIN_SRC python :tangle hosting_service.py :eval no
+#+begin_src python :tangle exporter.py :eval no
 if __name__ == "__main__":
     main(sys.argv)
-#+END_SRC
+#+end_src
 * Releases
 ** Release - v1.0
    This release will satisfy all the requirements.
