@@ -8,7 +8,7 @@
 
 
 * Introduction
-  Exporter program exports data from csv format to org format. The
+  Exporter program exports data from xlsx format to org format. The
   program is written in python language.
 
 * Requirements
@@ -17,9 +17,16 @@
      format.
   3. A directory is created for each experiment and test cases files
      are placed inside it.
+  4. Create an org file for each lab containing links to all the test
+     cases(org) files in the format: "<s.no> <experiment_name> <link
+     to org file>". Name of the file has to be:
+     "labname_testreport_date.org"
 
 * Design & Implementation
-** Input format
+** Design
+Program is implemented in python. xlrd package is used to process
+".xlsx" files. 
+*** Input format
 #+begin_example
 |---------------------+-----------------+-------------------+----------------+------------------+----------------------+-----------------------------------+----------------------+------------+-------------------+-------------------------------------------------+--------------------------------+-------------+------------+-----------+-----------------------|
 | *Lab Name*          | *Experiment ID* | *Requirements*    | *Test Step ID* | *Test Case Type* | *Test Description*   | *Test Steps*                      | *Expected Result*    | *Status*   | *Test Case Owner* | *Pre/Post Conditions*                           | *Data/Environment*             | *Dev Owner* | *Reviewed* | *History* | *Additional Comments* |
@@ -36,7 +43,7 @@
 |---------------------+-----------------+-------------------+----------------+------------------+----------------------+-----------------------------------+----------------------+------------+-------------------+-------------------------------------------------+--------------------------------+-------------+------------+-----------+-----------------------|
 #+end_example
 
-** Output format
+*** Output format
 #+begin_example
 Author :
 Date Created :
@@ -47,43 +54,113 @@ Test Steps :
 Expected result :
 Reviews/Comments :
 #+end_example
-
-** Design 
-*** Install xlrd
+*** Running the script
+**** Prerequisite
+Install xlrd packe
 #+begin_example
 pip install xlrd
 #+end_example
-
-*** Python Program
-**** Import Libraries
+**** Run the script
+Tangle out the python code from this model file and then run the script as follows
 #+begin_example
-import xlrd
+python exporter.py <path-to-xlsx-files>
+#+end_example
+** Implementation
+*** Main Function
+#+begin_src python :tangle exporter.py :eval no
 import os
 import sys
 import re
 import time
-#+end_example
 
-**** Define global variables to exclude some files
-#+begin_example
 exclude = set([".git", "README.md", "exp.*", "IIT Bombay", "Amrita"])
 combined = "(" + ")|(".join(exclude) + ")"
-#+end_example
 
-**** Create Directory
-#+begin_example
+def main(argv):
+    if len(argv) < 2:
+        print "Please provide the path of the file/directory within quotes in command line!"
+    else:
+        path = argv[1]
+        if os.path.isfile(path):
+            single_file(path)
+        else:
+            walk_over_path(path)
+#+end_src
+
+*** Process single xlsx file
+#+begin_src 
+def single_file(path):
+    basename = os.path.basename(path)
+    name, extension = os.path.splitext(basename)
+    process_lab_file(path, name)
+    return
+#+end_src
+
+*** Process multiple xlsx files
+#+begin_src 
+def walk_over_path(path):
+    for root, dirs, files in os.walk(path):
+        dirs[:] = [d for d in dirs if not re.match(combined, d)]
+        files[:] = [f for f in files if not re.match(combined, f)]
+        print "root = ", root; print "dirs = ", dirs; print "files = ", files
+        for f in files:
+            name, extension = os.path.splitext(f)
+            if (extension == '.xlsx'):
+                path = root + "/" + f
+                print "Path = ", path
+                process_lab_file(path, name)
+    return
+#+end_src
+
+*** Open lab file
+#+begin_src 
+def process_lab_file(path, labName):
+    book = xlrd.open_workbook(path)
+    number_of_experiments = book.nsheets
+    parentDirectory = os.path.dirname(path)
+    directory = parentDirectory + "/" + labName
+    make_directory(directory)
+    parentDirectory = directory
+    count = 1
+    metaFilePath = parentDirectory + "/" + labName + "_testreport_" + time.strftime('%c') + ".org"
+    metaFilePointer = open(metaFilePath, 'w')
+
+    for expIndex in range(number_of_experiments):
+        directory = parentDirectory + "/exp" + str(expIndex+1).zfill(2)
+        make_directory(directory)
+        experiment = book.sheet_by_index(expIndex)
+        testCasesPath = process_experiment(experiment, directory)
+        count = save_link_to_test_cases(metaFilePointer, count, experiment.name, testCasesPath)
+    metaFilePointer.close()
+    return
+#+end_src
+*** Make Directory
+#+begin_src 
+
 def make_directory(directory):
     if not os.path.exists(directory):
             os.makedirs(directory)
     return
-#+end_example
-
-**** Org Data
-#+begin_example
+#+end_src
+*** Process Experiment
+#+begin_src 
+def process_experiment(experiment, directory):
+    totalRows = experiment.nrows
+    testCasesPath = []
+    for row in range(1, totalRows):
+        filepath = directory + "/" + experiment.name + "_" + str(row).zfill(2) + "_" +  experiment.row(row)[2].value + ".org"
+        testCasesPath.append(filepath)
+        filepointer = open(filepath, 'w')
+        data =  org_data(experiment.row(row))
+        write_to_file(filepointer, data)
+    return testCasesPath
+#+end_src
+*** Convert to Org format
+#+begin_src 
 def org_data(row):
     data = {}
     data['author'] = "* Author : " + row[10].value + "\n"
-    data['date'] = "* Date: " + time.strftime('%c') + "\n"
+    data['date'] = "* Date Created: " + time.strftime('%c') + "\n"
     data['environment'] = "* Environment \n" + row[12].value + "\n"
     data['objective'] = "* Objective \n" + row[6].value + "\n"
     data['conditions'] = "* Pre/Post conditions \n" + row[11].value + "\n"
@@ -91,10 +168,9 @@ def org_data(row):
     data['result'] = "* Expected result \n" + row[8].value + "\n"
     data['review_comments'] = "* Review comments \n" + row[14].value + "\n"
     return data
-#+end_example
-
-**** Write to file
-#+begin_example
+#+end_src
+*** Write org format to a file
+#+begin_src 
 def write_to_file(filepointer, data):
     filepointer.write(data['author'].encode("utf-8"))
     filepointer.write(data['date'].encode("utf-8"))
@@ -107,82 +183,27 @@ def write_to_file(filepointer, data):
     filepointer.write("\n")
     filepointer.close()
     return
-#+end_example
+#+end_src
 
-**** Process Experiment
-#+begin_example
-def process_experiment(experiment, directory):
-    totalRows = experiment.nrows
-    for row in range(1, totalRows):
-        filepath = directory + "/" + experiment.name + "_" + str(row).zfill(2) + "_" +  experiment.row(row)[2].value + ".org"
-        filepointer = open(filepath, 'w')
-        data =  org_data(experiment.row(row))
-        write_to_file(filepointer, data)
-    return
-#+end_example
+*** Save links to test cases in a org file
+#+begin_src 
+def save_link_to_test_cases(filepointer, count, expName, testCasesPath):
+    for path in testCasesPath:
+        basename = os.path.basename(path)
+        line = str(count) + ". " + expName + " " + "[[" + path + "]" + "[" + basename + "]]" + "\n"
+        filepointer.write(line)
+        count+=1
+    return count
+#+end_src
 
-**** Open Lab file
-#+begin_example
-def open_lab_file(path, labName):
-    book = xlrd.open_workbook(path)
-    number_of_experiments = book.nsheets
-    parentDirectory = os.path.dirname(path)
-    directory = parentDirectory + "/" + labName
-    make_directory(directory)
-    parentDirectory = directory
-
-    for expIndex in range(number_of_experiments):
-        directory = parentDirectory + "/exp" + str(expIndex+1).zfill(2)
-        make_directory(directory)
-        experiment = book.sheet_by_index(expIndex)
-        process_experiment(experiment, directory)
-    return
-#+end_example
-
-**** Single File
-#+begin_example
-def single_file(path):
-    basename = os.path.basename(path)
-    name, extension = os.path.splitext(basename)
-    open_lab_file(path, name)
-    return
-#+end_example
-
-**** Walk over path
-#+begin_example
-def walk_over_path(path):
-    for root, dirs, files in os.walk(path):
-        dirs[:] = [d for d in dirs if not re.match(combined, d)]
-        files[:] = [f for f in files if not re.match(combined, f)]
-        print "root = ", root; print "dirs = ", dirs; print "files = ", files
-        for f in files:
-            name, extension = os.path.splitext(f)
-            if (extension == '.xlsx'):
-                path = root + "/" + f
-                print "Path = ", path
-                open_lab_file(path, name)
-    return
-#+end_example
-
-**** Main function
-#+begin_example
+*** Main function condition
+#+BEGIN_SRC python :tangle hosting_service.py :eval no
 if __name__ == "__main__":
-    if len(sys.argv) < 2:
-        print "Please provide the path of the file/directory within quotes in command line!"
-    else:
-        path = sys.argv[1]
-        if os.path.isfile(path):
-            single_file(path)
-        else:
-            walk_over_path(path)
-
-#+end_example
-
-* Test Cases
+    main(sys.argv)
+#+END_SRC
 * Releases
 ** Release - v1.0
    This release will satisfy all the requirements.
    Release Date :: [2015-11-30 Mon]
-
 
 
