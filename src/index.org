@@ -156,7 +156,6 @@ After the re-organization the org file looks as follows:
 *Reviews/Comments
 #+end_example
 
-
 * Implementation
 ** First Program implementation
 *** Main Function
@@ -469,4 +468,32 @@ if __name__ == "__main__":
    This release will satisfy all the requirements.
    Release Date :: [2015-11-30 Mon]
 
+* Tasks
+Implement following requirements:
 
+1. "-" is not required in test steps and expected result columns.
+   Refer to attached two org files and reorganize the data according
+   to these files.
+2. Use only two spaces in the beginning the new line. And use spaces
+   instead of tab.
+3. Create a test report file per lab basis as follows:
+   #+begin_example
+    S.no    Experiment Name    Test Case    Passed/Failed    Issue
+   #+end_example
+4. In pre/post condition for all test cases except first one, add a
+   link to refer to first test case org file as: "Refer to the <link>"
+5. Update model with instructions of installing xlrd package, pip.
+6. A lab may contain a "system" sheet. If this sheet is present then
+   create a folder called "system" instead of "exp<count>"
+   folder. Experiment counter should not be affected because of this
+   sheet.
+7. Create another script to parse the test report and generate
+   statistics of passed/failed test cases on per experiment basis and
+   per lab basis.
+8. See if exporter.py and sanitizer.py can be combined.
+
+I will complete 1-6 requirements by today. 7th requirement I am not
+sure if can be completed by today.
+
+After all these requirements are implemented, then a review of the
+code has to be done.
