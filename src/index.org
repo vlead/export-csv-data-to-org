@@ -31,7 +31,11 @@ The model consists of two programs. Programs are implemented in
 Python. 
 
 ** Prerequisite
-1. Install xlrd package
+1. Install pip
+#+begin_example
+apt-get -y install python-pip
+#+end_example
+2. Install xlrd package
 #+begin_example
 pip install xlrd
 #+end_example
@@ -924,7 +928,7 @@ Implement following requirements:
    #+end_example *DONE*
 4. In pre/post condition for all test cases except first one, add a
    link to refer to first test case org file as: "Refer to the <link>" *DONE*
-5. Update model with instructions of installing xlrd package, pip.
+5. Update model with instructions of installing xlrd package, pip. *Done*
 6. A lab may contain a "system" sheet. If this sheet is present then
    create a folder called "system" instead of "exp<count>"
    folder. Experiment counter should not be affected because of this
