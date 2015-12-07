@@ -251,7 +251,7 @@ def org_data(rowValue, rowNumber):
     return data
 #+end_src
 *** Reorganize Data
-#+begin_src 
+#+begin_src python :tangle exporter.py :eval no
 def reorganize_data_version1(data):
     if (len(data) == 0):
         return ""
@@ -355,7 +355,7 @@ if __name__ == "__main__":
 
 ** Second Program Implementation
 *** Main function
-#+begin_src python :tangle sanitize.py :eval no 
+#+begin_src python :tangle statistics.py :eval no 
 import xlrd
 import os
 import sys
@@ -384,7 +384,7 @@ def main(argv):
 #+end_src
 
 *** Process Single file
-#+begin_src python :tangle sanitize.py :eval no 
+#+begin_src python :tangle statistics.py :eval no 
 def single_file(path):
     basename = os.path.basename(path)
     basedir = os.path.dirname(path)
@@ -402,7 +402,7 @@ def single_file(path):
 #+end_src
 
 *** Process multiple files
-#+begin_src python :tangle sanitize.py :eval no 
+#+begin_src python :tangle statistics.py :eval no 
 def walk_over_path(path):
     totalStatistics = {}
     for root, dirs, files in os.walk(path):
@@ -422,7 +422,7 @@ def walk_over_path(path):
 #+end_src
 
 *** Get Statistics
-#+begin_src python :tangle sanitize.py :eval no 
+#+begin_src python :tangle statistics.py :eval no 
 def getStatistics(path):
     statistics = {}
 
@@ -447,7 +447,7 @@ def getStatistics(path):
 #+end_src
 
 *** Write to file
-#+begin_src python :tangle sanitize.py :eval no 
+#+begin_src python :tangle statistics.py :eval no 
 def write_to_file(path, data):
     filePointer = open(path, 'w')
     json.dump(data, filePointer)
@@ -456,7 +456,7 @@ def write_to_file(path, data):
 #+end_src
 
 *** Main Function Condition
-#+begin_src python :tangle sanitize.py :eval no 
+#+begin_src python :tangle statistics.py :eval no 
 if __name__ == "__main__":
     main(sys.argv)
 #+end_src
