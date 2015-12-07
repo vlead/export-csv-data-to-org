@@ -170,12 +170,10 @@ def walk_over_path(path):
     for root, dirs, files in os.walk(path):
         dirs[:] = [d for d in dirs if not re.match(dirscombined, d)]
         files[:] = [f for f in files if not re.match(filescombined, f)]
-        print "root = ", root; print "dirs = ", dirs; print "files = ", files
         for f in files:
             name, extension = os.path.splitext(f)
             if (extension == '.xlsx'):
                 path = root + "/" + f
-                print "Path = ", path
                 process_lab_file(path, name)
     return
 #+end_src
@@ -353,6 +351,211 @@ if __name__ == "__main__":
     main(sys.argv)
 #+end_src
 
+*** Code
+#+begin_example
+import xlrd
+import os
+import sys
+import re
+import time
+
+filesexclude = set(["README.md"])
+filescombined = "(" + ")|(".join(filesexclude) + ")"
+
+dirsexclude = set([".git", "exp.*", "IIT Bombay", "Amrita"])
+dirscombined = "(" + ")|(".join(dirsexclude) + ")"
+
+def main(argv):
+    if len(argv) < 2:
+        print "Please provide the path of the file/directory within quotes in command line!"
+    else:
+        path = argv[1]
+        if os.path.isfile(path):
+            single_file(path)
+        else:
+            walk_over_path(path)
+
+def single_file(path):
+    basename = os.path.basename(path)
+    name, extension = os.path.splitext(basename)
+    if (extension == '.xlsx'):
+        process_lab_file(path, name)
+    else:
+        print "Program does not support the provided file format!"
+    return
+
+def walk_over_path(path):
+    for root, dirs, files in os.walk(path):
+        dirs[:] = [d for d in dirs if not re.match(dirscombined, d)]
+        files[:] = [f for f in files if not re.match(filescombined, f)]
+        print "root = ", root; print "dirs = ", dirs; print "files = ", files
+        for f in files:
+            name, extension = os.path.splitext(f)
+            if (extension == '.xlsx'):
+                path = root + "/" + f
+                print "Path = ", path
+                process_lab_file(path, name)
+    return
+
+def process_lab_file(path, labName):
+    book = xlrd.open_workbook(path)
+    number_of_experiments = book.nsheets
+    parentDirectory = os.path.dirname(path)
+    directory = parentDirectory + "/" + labName
+    make_directory(directory)
+    parentDirectory = directory
+    labTestCases = []
+    expToTestCasesCount = []
+    count = 1
+    for expIndex in range(number_of_experiments):
+        experiment = book.sheet_by_index(expIndex)
+        if (experiment.name == "system"):
+            directory = parentDirectory + "/system"
+        else:
+            directory = parentDirectory + "/exp" + str(count).zfill(2)
+            count+=1
+        make_directory(directory)
+        testCases = process_experiment(experiment, directory)
+        metaFilePath = directory + "/" + experiment.name + "_metafile.org"
+        createMetaFile(testCases, metaFilePath)
+        expToTestCasesCount.append((experiment.name, len(testCases)))
+        labTestCases.extend(testCases)
+    testReportPath = parentDirectory + "/" + labName + "_testreport.org"
+    createTestReport(labTestCases, expToTestCasesCount, testReportPath, labName)
+    return
+
+def make_directory(directory):
+    if not os.path.exists(directory):
+            os.makedirs(directory)
+    return
+
+def process_experiment(experiment, directory):
+    totalRows = experiment.nrows
+    testCases = []
+    linkto = directory + "/" + experiment.name + "_01_" +  experiment.row(1)[2].value + ".org"
+    linkname = experiment.name + "_01_" + experiment.row(1)[2].value + ".org"
+    link = "[[" + linkto + "][" + linkname + "]]"
+    for row in range(1, totalRows):
+        filepath = directory + "/" + experiment.name + "_" + str(row).zfill(2) + "_" +  experiment.row(row)[2].value + ".org"
+        testCases.append(filepath)
+        data =  org_data(experiment.row(row), row)
+        if(row > 1):
+            data['conditions'] = "* Pre/Post conditions\n  - Refer to first test case " + link + "\n\n"
+        write_to_file(filepath, data)
+    return testCases
+
+
+def org_data(rowValue, rowNumber):
+    data = {}
+    data['author'] = "* Author: " + rowValue[10].value + "\n"
+    data['date'] = "* Date Created: " + time.strftime("%d %b %Y") + "\n"
+    data['environment'] = "* Environment\n" + reorganize_data_version1(rowValue[12].value) + "\n"
+    data['objective'] = "* Objective\n" + reorganize_data_version1(rowValue[6].value) + "\n"
+    data['conditions'] = "* Pre/Post conditions\n" + reorganize_data_version2(rowValue[11].value) + "\n"
+    if (rowNumber == 1):
+        data['testSteps'] = "* Test Steps\n" + reorganize_teststeps(rowValue[7].value) + "\n"
+    else:
+        data['testSteps'] = "* Test Steps\n" + reorganize_data_version2(rowValue[7].value) + "\n"
+    data['result'] = "* Expected result\n" + reorganize_data_version2(rowValue[8].value) + "\n"
+    data['review_comments'] = "* Review comments\n" + reorganize_data_version1(rowValue[14].value) + "\n"
+    return data
+
+def reorganize_data_version1(data):
+    if (len(data) == 0):
+        return ""
+    splitData = data.split('\n')
+    length = len(splitData)
+    organizedData = ""
+    for line in splitData:
+        if(line == '\n' or line == ""):
+            continue
+        line = line.lstrip(" -")
+        organizedData = organizedData + '  - ' + line + "\n"
+    return organizedData
+
+def reorganize_data_version2(data):
+    if (len(data) == 0):
+        return ""
+    splitData = data.split('\n')
+    length = len(splitData)
+    organizedData = ""
+    count = 1
+    for line in splitData:
+        if(line == '\n' or line == ""):
+            continue
+        line = line.lstrip(" -.1234567890")
+        organizedData = organizedData +  '  ' + str(count) + '. ' + line + "\n"
+        count+= 1
+    return organizedData
+
+def reorganize_teststeps(data):
+    if (len(data) == 0):
+        return ""
+    splitData = data.split('\n')
+    length = len(splitData)
+    organizedData = ""
+    splitData[0] = splitData[0].lstrip(" -")
+    organizedData+= '  - ' + splitData[0] + '\n'
+    count = 1
+    for line in splitData[2:length-1]:
+        line = line.lstrip(" -.1234567890")
+        organizedData+= '  ' + str(count) + '. ' + line + "\n"
+        count+=1
+    return organizedData
+
+
+def write_to_file(filepath, data):
+    filepointer = open(filepath, 'w')
+    filepointer.write(data['author'].encode("utf-8"))
+    filepointer.write(data['date'].encode("utf-8"))
+    filepointer.write(data['environment'].encode("utf-8"))
+    filepointer.write(data['objective'].encode("utf-8"))
+    filepointer.write(data['conditions'].encode("utf-8"))
+    filepointer.write(data['testSteps'].encode("utf-8"))
+    filepointer.write(data['result'].encode("utf-8"))
+    filepointer.write(data['review_comments'].encode("utf-8"))
+    filepointer.write("\n")
+    filepointer.close()
+    return
+
+def createMetaFile(testCases, metaFilePath):
+    filePointer = open(metaFilePath, 'w')
+    filePointer.write("S.no\t\tTest case link\n")
+    count = 1
+    for path in testCases:
+        basename = os.path.basename(path)
+        sno = str(count) + ". "
+        link = "[[" + path + "][" + basename + "]]"
+        line = sno + "\t " + link + "\n"
+        filePointer.write(line)
+        count+=1
+    filePointer.close()
+    return
+
+def createTestReport(labTestCases, expToTestCasesCount, testReportPath, labName):
+    filePointer = open(testReportPath, 'w')
+    filePointer.write("Lab Name : %s\n" %(labName))
+
+    filePointer.write("S.no\tExperiment Name\t\t\t\tTest Case\t\t\t\tPass/Fail\tIssue Link\n")
+    count = 1; expCount = 0; testCasesCount = 0
+    for path in labTestCases:
+        if testCasesCount >= expToTestCasesCount[expCount][1]:
+            expCount+=1
+            testCasesCount = 0
+        basename = os.path.basename(path)
+        sno = str(count)+ ". "; expname = expToTestCasesCount[expCount][0]; testcasename = "[[" + path + "][" + basename + "]]";
+        passfail = " "; link = " ";
+        line = sno + "    " + expname + "        " + testcasename + "\n"
+        filePointer.write(line)
+        count+=1; testCasesCount+=1
+
+    filePointer.close()
+    return
+
+if __name__ == "__main__":
+    main(sys.argv)
+
+#+end_example
 ** Second Program Implementation
 *** Main function
 #+begin_src python :tangle statistics.py :eval no 
@@ -408,11 +611,9 @@ def walk_over_path(path):
     for root, dirs, files in os.walk(path):
         dirs[:] = [d for d in dirs if not re.match(dirscombined, d)]
         files[:] = [f for f in files if re.match(filescombined, f) and not re.match(filescombinedexcl, f)]
-        print "root = ", root; print "dirs = ", dirs; print "files = ", files
         for f in files:
             if (re.match(".*_testreport.org", f)):
                 filePath = root + "/" + f
-                print "Path = ", filePath
                 statistics = getStatistics(filePath)
                 labName = f.rstrip("_testreport.org")
                 totalStatistics[labName] = statistics
@@ -431,19 +632,29 @@ def getStatistics(path):
     filePointer.readline()
     for line in filePointer.readlines():
         splitData = re.split(r'\s{3,}', line)
-        try:
-            if(re.match('pass', splitData[3], re.IGNORECASE)):
-                statistics[splitData[1]]['pass'] += 1
-            elif(re.match('fail', splitData[3], re.IGNORECASE)):
-                statistics[splitData[1]]['fail'] += 1
-        except:
+        if(len(splitData) > 3):
+            try:
+                if(re.match('pass', splitData[3], re.IGNORECASE)):
+                    statistics[splitData[1]]['pass'] += 1
+                elif(re.match('fail', splitData[3], re.IGNORECASE)):
+                    statistics[splitData[1]]['fail'] += 1
+            except:
+                if(re.match('pass', splitData[3], re.IGNORECASE)):
+                    statistics[splitData[1]] = {}
+                    statistics[splitData[1]]['pass'] = 1
+                    statistics[splitData[1]]['fail'] = 0
+                elif(re.match('fail', splitData[3], re.IGNORECASE)):
+                    statistics[splitData[1]] = {}
+                    statistics[splitData[1]]['fail'] = 1
+                    statistics[splitData[1]]['pass'] = 0
+        elif (splitData[1] not in statistics):
             statistics[splitData[1]] = {}
-            statistics[splitData[1]]['pass'] = 0
             statistics[splitData[1]]['fail'] = 0
+            statistics[splitData[1]]['pass'] = 0
 
     filePointer.close()
-
     return statistics
+
 #+end_src
 
 *** Write to file
@@ -460,6 +671,154 @@ def write_to_file(path, data):
 if __name__ == "__main__":
     main(sys.argv)
 #+end_src
+*** Code
+#+begin_example
+
+import xlrd
+import os
+import sys
+import re
+import time
+import texttable
+from tabulate import tabulate
+import json
+
+
+filesinclude = set([".*testreport.org"])
+filescombined = "(" + ")|(".join(filesinclude) + ")"
+
+filesexclude = set([".*testreport.org~", "labs_stat.org"])
+filescombinedexcl = "(" + ")|(".join(filesexclude) + ")"
+
+dirsexclude = set([".git", "IIT Bombay", "Amrita", "exp.*", "system"])
+dirscombined = "(" + ")|(".join(dirsexclude) + ")"
+
+def main(argv):
+    if len(argv) < 2:
+        print "Please provide the path of the file/directory within quotes in command line!"
+    else:
+        path = argv[1]
+        if os.path.isfile(path):
+            single_file(path)
+        else:
+            walk_over_path(path)
+
+def single_file(path):
+    basename = os.path.basename(path)
+    basedir = os.path.dirname(path)
+    name, extension = os.path.splitext(basename)
+    if (re.match(".*_testreport.org", basename)):
+        totalStatistics = {}
+        statistics = getStatistics(path)
+        labName = basename.rstrip("_testreport.org")
+        totalStatistics[labName] = statistics
+        statsPath = basedir + "/" + "stats.org"
+        write_to_file(statsPath, totalStatistics)
+    else:
+        print "Program does not support the provided file format!"
+    return
+
+def walk_over_path(path):
+    totalStatistics = {}
+    for root, dirs, files in os.walk(path):
+        dirs[:] = [d for d in dirs if not re.match(dirscombined, d)]
+        files[:] = [f for f in files if re.match(filescombined, f) and not re.match(filescombinedexcl, f)]
+        for f in files:
+            if (re.match(".*_testreport.org", f)):
+                filePath = root + "/" + f
+                statistics = getStatistics(filePath)
+                labName = f.rstrip("_testreport.org")
+                totalStatistics[labName] = statistics
+    statsPath = path + "/" + "stats.org"
+    write_to_file(statsPath, totalStatistics)
+    return
+
+def getStatistics(path):
+    statistics = {}
+
+    filePointer = open(path, 'r')
+    filePointer.readline()
+    filePointer.readline()
+    previous = ""
+    for line in filePointer.readlines():
+        splitData = re.split(r'\s{3,}', line)
+        if(len(splitData) > 3):
+            try:
+                if(re.match('pass', splitData[3], re.IGNORECASE)):
+                    statistics[splitData[1]]['pass'] += 1
+                elif(re.match('fail', splitData[3], re.IGNORECASE)):
+                    statistics[splitData[1]]['fail'] += 1
+            except:
+                if(re.match('pass', splitData[3], re.IGNORECASE)):
+                    statistics[splitData[1]] = {}
+                    statistics[splitData[1]]['pass'] = 1
+                    statistics[splitData[1]]['fail'] = 0
+                elif(re.match('fail', splitData[3], re.IGNORECASE)):
+                    statistics[splitData[1]] = {}
+                    statistics[splitData[1]]['fail'] = 1
+                    statistics[splitData[1]]['pass'] = 0
+        elif (splitData[1] not in statistics):
+            statistics[splitData[1]] = {}
+            statistics[splitData[1]]['fail'] = 0
+            statistics[splitData[1]]['pass'] = 0
+
+    filePointer.close()
+    dirname = os.path.dirname(path)
+    exppath = dirname + "/" + "lab_stats.org"
+    write_to_file_per_lab(exppath, statistics)
+    return statistics
+
+def write_to_file(path, data):
+    filePointer = open(path, 'w')
+#    filePointer.write("S.no \t\tLab Name\t\t Experiment Name\tPass Count\tFail Count\n")
+    count = 1
+    table = []
+    table.append(["\033[1m" + "S.no" , "Lab Name" , "Experiment Name", "Pass Count", "Fail Count" + "\033[0m"])
+    for lab in data:
+        for exp in data[lab]:
+            #line = str(count) + ". \t" + lab + "\t\t" + exp + "\t\t"  +str(data[lab][exp]['pass']) + "\t\t" + str(data[lab][exp]['fail']) + "\n"
+            row = [str(count) + ". ", lab, exp, str(data[lab][exp]['pass']), str(data[lab][exp]['fail'])]
+            table.append(row)
+            line = "        ".join(row)
+    #        filePointer.write(line)
+     #       filePointer.write("\n")
+            count+=1
+    print tabulate(table)
+    filePointer.write(tabulate(table))
+    filePointer.close()
+    return
+
+def write_to_file_per_lab(path, data):
+    filePointer = open(path, 'w')
+    filePointer.write("S.no \t\t Experiment Name\tPass Count\tFail Count\n")
+    count = 1
+    for exp in data:
+        line = str(count) + ". \t" + exp + "\t\t"  +str(data[exp]['pass']) + "\t\t" + str(data[exp]['fail']) + "\n"
+        filePointer.write(line)
+        count+=1
+    filePointer.close()
+    return
+
+
+def write_to_file1(path, data):
+    filePointer = open(path, 'w')
+    count = 1
+    tab = texttable.Texttable()
+    tab.header(["S.no", "Lab Name", "Experiment Name", "Pass Count", "Fail Count"])
+    tab.set_cols_width([5,35,35,5,5])
+    for lab in data:
+        for exp in data[lab]:
+            tab.add_row([count, lab, exp, data[lab][exp]['pass'], data[lab][exp]['fail']])
+            count+=1
+    filePointer.write(tab.draw())
+    filePointer.close()
+    return
+
+
+if __name__ == "__main__":
+    main(sys.argv)
+
+#+end_example
 * Releases
 ** Release - v1.0
    This release will satisfy all the requirements.
