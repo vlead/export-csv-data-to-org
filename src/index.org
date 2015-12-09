@@ -459,7 +459,6 @@ import sys
 import re
 import time
 import texttable
-from tabulate import tabulate
 
 
 filesinclude = set([".*testreport.org"])
@@ -507,8 +506,6 @@ def walk_over_path(path):
                 statistics = getStatistics(filePath)
                 labName = f.rstrip("_testreport.org")
                 totalStatistics[labName] = statistics
-    statsPath = path + "/" + "stats.org"
-    write_to_file(statsPath, totalStatistics)
     return
 
 def getStatistics(path):
@@ -573,21 +570,6 @@ def write_to_file_per_lab(path, labNameLine, gitLabUrlLine, commitIdLine, data):
 
     filePointer.write("Total number of passed test cases = %s\n" %(passcount))
     filePointer.write("Total number of failed test cases = %s\n\n" %(failcount))
-    filePointer.write(tab.draw())
-    filePointer.close()
-    return
-
-
-def write_to_file(path, data):
-    filePointer = open(path, 'w')
-    count = 1
-    tab = texttable.Texttable()
-    tab.header(["S.no", "Lab Name", "Experiment Name", "Pass Count", "Fail Count"])
-    tab.set_cols_width([5,35,35,5,5])
-    for lab in data:
-        for exp in data[lab]:
-            tab.add_row([count, lab, exp, data[lab][exp]['pass'], data[lab][exp]['fail']])
-            count+=1
     filePointer.write(tab.draw())
     filePointer.close()
     return

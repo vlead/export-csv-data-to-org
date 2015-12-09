@@ -2,6 +2,10 @@
 
 This script generates test report per lab and meta files per experiment from org format.
 
+Prerequisite:
+
+$ pip install texttable
+
 To run the script execute it as follows:
 
 $ python <testreport.py path> <lab path>
