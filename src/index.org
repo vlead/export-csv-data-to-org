@@ -577,6 +577,7 @@ def write_to_file_per_lab(path, labNameLine, gitLabUrlLine, commitIdLine, data):
 
 if __name__ == "__main__":
     main(sys.argv)
+
 #+end_src
 * Releases
 ** Release - v1.0
