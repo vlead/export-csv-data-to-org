@@ -56,18 +56,10 @@ def process_lab_file(path, labName):
     parentDirectory = directory
     labTestCases = []
     expToTestCasesCount = []
-#    count = 1
     for expIndex in range(number_of_experiments):
         experiment = book.sheet_by_index(expIndex)
-        directory = parentDirectory + "/system"
+        directory = parentDirectory + "/" + experiment.name
         gitExpUrl = gitLabUrl +  "/blob/master/test-cases/integration_test-cases" + "/system"
-        #if (experiment.name == "system"):
-         #   directory = parentDirectory + "/system"
-          #  gitExpUrl = gitLabUrl +  "/blob/master/test-cases/integration_test-cases" + "/system"
-        #else:
-         #   directory = parentDirectory + "/exp" + str(count).zfill(2)
-          #  gitExpUrl = gitLabUrl +  "/blob/master/test-cases/integration_test-cases" + "/exp" + str(count).zfill(2)
-           # count+=1
         make_directory(directory)
         testCases = process_experiment(experiment, directory, gitExpUrl)
         metaFilePath = directory + "/" + experiment.name + "_metafile.org"
