@@ -1,4 +1,6 @@
-# Readme file for running testreport.py
+# Title: Readme file for running testreport.py
+# Author: Yogesh Agrawal
+# Email: yogeshiiith@gmail.com; yogesh@vlabs.ac.in
 
 1. Description::
 

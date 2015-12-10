@@ -1,4 +1,6 @@
-# Readme file for running exporter.py
+# Title: Readme file for running exporter.py
+# Author: Yogesh Agrawal
+# Email: yogeshiiith@gmail.com; yogesh@vlabs.ac.in
 
 1. Description::
 

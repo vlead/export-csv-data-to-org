@@ -1,3 +1,11 @@
+#######################################################
+# File name: exporter.py
+# Author: Yogesh Agrawal
+# Submission: Dec 10, 2015
+# Email: yogeshiiith@gmail.com; yogesh@vlabs.ac.in
+#######################################################
+
+
 import xlrd
 import os
 import sys

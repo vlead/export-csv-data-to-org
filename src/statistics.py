@@ -1,3 +1,10 @@
+#######################################################
+# File name: statistics.py
+# Author: Yogesh Agrawal
+# Submission: Dec 10, 2015
+# Email: yogeshiiith@gmail.com; yogesh@vlabs.ac.in
+#######################################################
+
 import os
 import sys
 import re
