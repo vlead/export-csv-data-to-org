@@ -7,7 +7,7 @@ import time
 filesexclude = set(["README.md"])
 filescombined = "(" + ")|(".join(filesexclude) + ")"
 
-dirsexclude = set([".git", "exp.*", "IIT Bombay", "Amrita"])
+dirsexclude = set([".git", "IIT Bombay", "Amrita"])
 dirscombined = "(" + ")|(".join(dirsexclude) + ")"
 
 expnameColumnwidth = 50
@@ -56,16 +56,18 @@ def process_lab_file(path, labName):
     parentDirectory = directory
     labTestCases = []
     expToTestCasesCount = []
-    count = 1
+#    count = 1
     for expIndex in range(number_of_experiments):
         experiment = book.sheet_by_index(expIndex)
-        if (experiment.name == "system"):
-            directory = parentDirectory + "/system"
-            gitExpUrl = gitLabUrl +  "/blob/master/test-cases/integration_test-cases" + "/system"
-        else:
-            directory = parentDirectory + "/exp" + str(count).zfill(2)
-            gitExpUrl = gitLabUrl +  "/blob/master/test-cases/integration_test-cases" + "/exp" + str(count).zfill(2)
-            count+=1
+        directory = parentDirectory + "/system"
+        gitExpUrl = gitLabUrl +  "/blob/master/test-cases/integration_test-cases" + "/system"
+        #if (experiment.name == "system"):
+         #   directory = parentDirectory + "/system"
+          #  gitExpUrl = gitLabUrl +  "/blob/master/test-cases/integration_test-cases" + "/system"
+        #else:
+         #   directory = parentDirectory + "/exp" + str(count).zfill(2)
+          #  gitExpUrl = gitLabUrl +  "/blob/master/test-cases/integration_test-cases" + "/exp" + str(count).zfill(2)
+           # count+=1
         make_directory(directory)
         testCases = process_experiment(experiment, directory, gitExpUrl)
         metaFilePath = directory + "/" + experiment.name + "_metafile.org"
@@ -188,11 +190,11 @@ def createTestReport(parentDirectory, labTestCases, expToTestCasesCount, labName
     testReportPath = parentDirectory + "/" + labName + "_" + commit_id + "_testreport.org"
     filePointer = open(testReportPath, 'w')
     filePointer.write("* Test Report\n")
-    filePointer.write("* Lab Name : %s\n" %(labName))
-    filePointer.write("* GitHub URL : %s\n" %(gitLabUrl))
-    filePointer.write("* Commit ID : %s\n\n" %(commit_id))
+    filePointer.write("** Lab Name : %s\n" %(labName))
+    filePointer.write("** GitHub URL : %s\n" %(gitLabUrl))
+    filePointer.write("** Commit ID : %s\n\n" %(commit_id))
     filePointer.write("#"*160+ "\n")
-    filePointer.write("S.no" + " "*14 + "Experiment Name" + " "*50  + "Test Case" + " "*42 + "Pass/Fail" + " "*8  + "Issue Link\n")
+    filePointer.write("S.no" + " "*14 + "Experiment Name" + " "*50  + "Test Case" + " "*42 + "Pass/Fail" + " "*8  + "Defect Link\n")
     filePointer.write("#"*160+ "\n")
     count = 1; expCount = 0; testCasesCount = 0
     for path in labTestCases:

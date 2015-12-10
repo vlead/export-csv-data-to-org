@@ -1,4 +1,3 @@
-import xlrd
 import os
 import sys
 import re
@@ -9,10 +8,10 @@ import texttable
 filesinclude = set([".*testreport.org"])
 filescombined = "(" + ")|(".join(filesinclude) + ")"
 
-filesexclude = set([".*testreport.org~", ".*statsreport.org"])
+filesexclude = set([".*testreport.org~", ".*statsreport.org", ".*.html"])
 filescombinedexcl = "(" + ")|(".join(filesexclude) + ")"
 
-dirsexclude = set([".git", "IIT Bombay", "Amrita", "exp.*", "system"])
+dirsexclude = set([".git", "IIT Bombay", "Amrita"])
 dirscombined = "(" + ")|(".join(dirsexclude) + ")"
 
 def main(argv):
@@ -113,9 +112,11 @@ def write_to_file_per_lab(path, labNameLine, gitLabUrlLine, commitIdLine, data):
         failcount+=data[exp]['fail']
         count+=1
 
-    filePointer.write("Total number of passed test cases = %s\n" %(passcount))
+    filePointer.write("Total number of passed test cases = %s\n\n" %(passcount))
     filePointer.write("Total number of failed test cases = %s\n\n" %(failcount))
+    filePointer.write("#+begin_example\n")
     filePointer.write(tab.draw())
+    filePointer.write("\n#+end_example\n")
     filePointer.close()
     return
 
