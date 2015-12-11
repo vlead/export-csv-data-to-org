@@ -18,9 +18,12 @@ filescombined = "(" + ")|(".join(filesexclude) + ")"
 dirsexclude = set([".git", "IIT Bombay", "Amrita"])
 dirscombined = "(" + ")|(".join(dirsexclude) + ")"
 
-expnameColumnwidth = 50
-testcasenameColumnwidth = 60
-snoColumnwidth = 10
+snoColumnwidth = 5
+expnameColumnwidth = 30
+testcasenameColumnwidth = 50
+passfailColumnwidth = 10
+defectColumnwidth = 15
+
 
 def main(argv):
     if len(argv) < 2:
@@ -67,14 +70,13 @@ def process_lab_file(path, labName):
     for expIndex in range(number_of_experiments):
         experiment = book.sheet_by_index(expIndex)
         directory = parentDirectory + "/" + experiment.name
-        gitExpUrl = gitLabUrl +  "/blob/master/test-cases/integration_test-cases" + "/system"
+        gitExpUrl = gitLabUrl +  "/blob/master/test-cases/integration_test-cases" + "/" + experiment.name
         make_directory(directory)
         testCases = process_experiment(experiment, directory, gitExpUrl)
         metaFilePath = directory + "/" + experiment.name + "_metafile.org"
         createMetaFile(testCases, metaFilePath)
-        expToTestCasesCount.append((experiment.name, len(testCases)))
         labTestCases.extend(testCases)
-    createTestReport(parentDirectory, labTestCases, expToTestCasesCount, labName, gitLabUrl)
+    createTestReport(parentDirectory, labTestCases, labName, gitLabUrl)
     return
 
 def make_directory(directory):
@@ -87,7 +89,6 @@ def process_experiment(experiment, directory, gitExpUrl):
     testCases = []
     testCaseFileName = experiment.name + "_01_" +  experiment.row(1)[2].value + ".org"
     linkto =  gitExpUrl + "/" + testCaseFileName
-    #linkto = directory + "/" + testCaseFileName
     linkname = testCaseFileName
     referlink = "[[" + linkto + "][" + linkname + "]]"
     for row in range(1, totalRows):
@@ -185,35 +186,54 @@ def createMetaFile(testCases, metaFilePath):
     filePointer.close()
     return
 
-def createTestReport(parentDirectory, labTestCases, expToTestCasesCount, labName, gitLabUrl):
-    commit_id = raw_input("Please enter commit id for lab: %s\n" %(labName))
+def generateLine(sno, expname, testcasename, passfail, defectlink, linklength=0):
+    snolength = len(sno); sno = sno + " "*(snoColumnwidth - snolength)
+    expnamelength = len(expname); expname = expname + " "*(expnameColumnwidth - expnamelength)
+    if (linklength==0):
+        linklength = len(testcasename);
+    testcasename = testcasename + " "*(testcasenameColumnwidth - linklength)
+    passfaillength = len(passfail); passfail = passfail + " "*(passfailColumnwidth - passfaillength)
+    defectlinklength = len(defectlink); defectlink = defectlink + " "*(defectColumnwidth - defectlinklength)
+
+    line = "| " + sno + "  |  " + expname + "  |  " + testcasename + "  |  " + passfail + "  |  " + defectlink + " |\n"
+    return line
+
+def lineBreak():
+    line  = "|" + "-"*132+ "|\n"
+    return (line)
+
+
+def createTestReport(parentDirectory, labTestCases, labName, gitLabUrl):
+    commit_id = raw_input("Please enter commit id to generate test report for lab: %s\n" %(labName))
     testReportPath = parentDirectory + "/" + labName + "_" + commit_id + "_testreport.org"
     filePointer = open(testReportPath, 'w')
     filePointer.write("* Test Report\n")
     filePointer.write("** Lab Name : %s\n" %(labName))
     filePointer.write("** GitHub URL : %s\n" %(gitLabUrl))
     filePointer.write("** Commit ID : %s\n\n" %(commit_id))
-    filePointer.write("#"*160+ "\n")
-    filePointer.write("S.no" + " "*14 + "Experiment Name" + " "*50  + "Test Case" + " "*42 + "Pass/Fail" + " "*8  + "Defect Link\n")
-    filePointer.write("#"*160+ "\n")
-    count = 1; expCount = 0; testCasesCount = 0
-    for path in labTestCases:
-        if testCasesCount >= expToTestCasesCount[expCount][1]:
-            expCount+=1
-            testCasesCount = 0
-        basename = os.path.basename(path)
-        sno = str(count)+ ". "; expname = expToTestCasesCount[expCount][0]; 
-        testcasename = "[[" + path + "][" + basename + "]]";
-        passfail = " "; link = " ";
+    filePointer.write(lineBreak())
 
-        expnamelength = len(expname); linklength = len(basename); snolength = len(sno)
-        expname = expname + " "*(expnameColumnwidth - expnamelength)
-        testcasename = testcasename + " "*(testcasenameColumnwidth - linklength)
-        sno = sno + " "*(snoColumnwidth - snolength)
-        line = sno + "  |  " + expname + "  |  " + testcasename + "  |  " + " "*13 + "  |  " + " "*3 + "\n"
+    sno = "*Sno"; expname = "Experiment Name"; testcasename = "Test Case";
+    passfail = "Pass/Fail"; defectlink = "Defect Link*";
+    line = generateLine(sno, expname, testcasename, passfail, defectlink)
+    filePointer.write(line)
+    
+    filePointer.write(lineBreak())
+    count = 1;
+    for path in labTestCases:
+        basename = os.path.basename(path)
+        
+        sno = str(count)+ ". "; 
+        expname = basename.split("_")[0];
+        testcasename = "[[" + path + "][" + basename + "]]";
+        passfail = " "; defectlink = " ";
+
+        linklength = len(basename);
+
+        line = generateLine(sno, expname, testcasename, passfail, defectlink, linklength)
         filePointer.write(line)
-        filePointer.write("-"*160+ "\n")
-        count+=1; testCasesCount+=1
+        filePointer.write(lineBreak())
+        count+=1; 
     filePointer.close()
     return
 

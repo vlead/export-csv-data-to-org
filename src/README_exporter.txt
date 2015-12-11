@@ -12,9 +12,10 @@ Test case org files are saved inside experiment folder.
 a. Test cases for each lab is already there. Name of the files should be same as the name of the git repository
    name for that lab.
 
-b. Install dependencies:
+b. Install dependencies
    $ sudo apt-get install python-pip
-   $ sudo pip install xlrd
+   $ pip install xlrd
+
 
 3. Running the script::
 Script can be executed as follows:
