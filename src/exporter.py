@@ -114,7 +114,7 @@ def org_data(rowValue, rowNumber):
     else:
         data['testSteps'] = "* Test Steps\n" + reorganize_data_version2(rowValue[7].value) + "\n"
     data['result'] = "* Expected result\n" + reorganize_data_version2(rowValue[8].value) + "\n"
-    data['review_comments'] = "* Review comments\n" + reorganize_data_version1(rowValue[14].value) + "\n"
+    data['review_comments'] = "* Review/comments\n" + reorganize_data_version1(rowValue[14].value) + "\n"
     return data
 
 def reorganize_data_version1(data):
