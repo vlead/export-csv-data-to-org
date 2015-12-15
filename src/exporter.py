@@ -91,30 +91,38 @@ def process_experiment(experiment, directory, gitExpUrl):
     linkto =  gitExpUrl + "/" + testCaseFileName
     linkname = testCaseFileName
     referlink = "[[" + linkto + "][" + linkname + "]]"
+    postConditions = False
+    if (re.match('post conditions', experiment.row(0)[12].value, re.IGNORECASE)):
+        postConditions = True
     for row in range(1, totalRows):
         testCaseFileName = experiment.name + "_" + str(row).zfill(2) + "_" + experiment.row(row)[2].value + ".org"
         filepath = directory + "/" + testCaseFileName
         gitTestCaseUrl = gitExpUrl + "/" + testCaseFileName
         testCases.append(gitTestCaseUrl)
-        data =  org_data(experiment.row(row), row)
+        data =  org_data(experiment.row(row), row, postConditions)
         if(row > 1):
             data['conditions'] = "* Pre/Post conditions\n  - Refer to first test case " + referlink + "\n\n"
         write_to_file(filepath, data)
     return testCases
 
-def org_data(rowValue, rowNumber):
+def org_data(rowValue, rowNumber, postConditions):
     data = {}
     data['author'] = "* Author: " + rowValue[10].value + "\n"
     data['date'] = "* Date Created: " + time.strftime("%d %b %Y") + "\n"
     data['environment'] = "* Environment\n" + reorganize_data_version1(rowValue[12].value) + "\n"
     data['objective'] = "* Objective\n" + reorganize_data_version1(rowValue[6].value) + "\n"
-    data['conditions'] = "* Pre/Post conditions\n" + reorganize_data_version2(rowValue[11].value) + "\n"
+    data['preConditions'] = "* Pre conditions\n" + reorganize_data_version2(rowValue[11].value) + "\n"
+    if (postConditions):
+        data['postConditions'] = "* Post conditions\n" + reorganize_data_version2(rowValue[12].value) + "\n"
+        data['review_comments'] = "* Review/comments\n" + reorganize_data_version1(rowValue[15].value) + "\n"
+    else:
+        data['postConditions'] = "* Post conditions\n  - Nil" + "\n"
+        data['review_comments'] = "* Review/comments\n" + reorganize_data_version1(rowValue[14].value) + "\n"
     if (rowNumber == 1):
         data['testSteps'] = "* Test Steps\n" + reorganize_teststeps(rowValue[7].value) + "\n"
     else:
         data['testSteps'] = "* Test Steps\n" + reorganize_data_version2(rowValue[7].value) + "\n"
     data['result'] = "* Expected result\n" + reorganize_data_version2(rowValue[8].value) + "\n"
-    data['review_comments'] = "* Review/comments\n" + reorganize_data_version1(rowValue[14].value) + "\n"
     return data
 
 def reorganize_data_version1(data):
@@ -166,7 +174,8 @@ def write_to_file(filepath, data):
     filepointer.write(data['date'].encode("utf-8"))
     filepointer.write(data['environment'].encode("utf-8"))
     filepointer.write(data['objective'].encode("utf-8"))
-    filepointer.write(data['conditions'].encode("utf-8"))
+    filepointer.write(data['preConditions'].encode("utf-8"))
+    filepointer.write(data['postConditions'].encode("utf-8"))
     filepointer.write(data['testSteps'].encode("utf-8"))
     filepointer.write(data['result'].encode("utf-8"))
     filepointer.write(data['review_comments'].encode("utf-8"))
