@@ -75,26 +75,28 @@ def getStatistics(path):
             statistics[splitData[1]] = {}
             statistics[splitData[1]]['fail'] = 0
             statistics[splitData[1]]['pass'] = 0
-        try:
-            if(re.match('pass', splitData[3], re.IGNORECASE)):
-                statistics[splitData[1]]['pass'] += 1
-            elif(re.match('fail', splitData[3], re.IGNORECASE)):
-                statistics[splitData[1]]['fail'] += 1
-        except:
-            if(re.match('pass', splitData[3], re.IGNORECASE)):
-                statistics[splitData[1]] = {}
-                statistics[splitData[1]]['pass'] = 1
-                statistics[splitData[1]]['fail'] = 0
-            elif(re.match('fail', splitData[3], re.IGNORECASE)):
-                statistics[splitData[1]] = {}
-                statistics[splitData[1]]['fail'] = 1
-                statistics[splitData[1]]['pass'] = 0
+            statistics[splitData[1]]['s1'] = 0
+            statistics[splitData[1]]['s2'] = 0
+            statistics[splitData[1]]['s3'] = 0
+        if(re.match('pass', splitData[3], re.IGNORECASE)):
+            statistics[splitData[1]]['pass'] += 1
+        elif(re.match('fail', splitData[3], re.IGNORECASE)):
+            statistics[splitData[1]]['fail'] += 1
+        
+        if(re.match('s1', splitData[4], re.IGNORECASE)):
+            statistics[splitData[1]]['s1'] += 1
+        elif(re.match('s2', splitData[4], re.IGNORECASE)):
+            statistics[splitData[1]]['s2'] += 1
+        elif(re.match('s3', splitData[4], re.IGNORECASE)):
+            statistics[splitData[1]]['s3'] += 1
 
     filePointer.close()
     dirname = os.path.dirname(path)
+    filename = os.path.basename(path)
+    time = filename.split("_")[0]
     commitId = commitIdLine.split(" ")[-1].strip("\n")
     labName = labNameLine.split(" ")[-1].strip("\n")
-    exppath = dirname + "/" + labName + "_" + commitId + "_statsreport.org"
+    exppath = dirname + "/" + time + "_stats.org"
     write_to_file_per_lab(exppath, labNameLine, gitLabUrlLine, commitIdLine, statistics)
     return statistics
 
@@ -124,18 +126,22 @@ def write_to_file_per_lab(path, labNameLine, gitLabUrlLine, commitIdLine, data):
     table+= generateLine("*S.no", "Experiment Name", "Pass Count", "Fail Count*")
     table+= lineBreak() 
     count = 1
-    passcount = 0;    failcount = 0
+    passcount = 0;    failcount = 0; s1count = 0; s2count = 0; s3count = 0;
     for exp in data:
         sno = str(count);  passcountstr = str(data[exp]['pass']); failcountstr = str(data[exp]['fail'])
         line = generateLine(sno, exp, passcountstr, failcountstr)
         table += line + lineBreak()
-        #line = str(count) + ". \t" + exp + "\t\t"  +str(data[exp]['pass']) + "\t\t" + str(data[exp]['fail']) + "\n"
-        #tab.add_row([count, exp, data[exp]['pass'], data[exp]['fail']])
         passcount+=data[exp]['pass']
         failcount+=data[exp]['fail']
+        s1count+=data[exp]['s1']
+        s2count+=data[exp]['s2']
+        s3count+=data[exp]['s3']
         count+=1
 
     filePointer.write("Total number of passed test cases = %s\n\n" %(passcount))
+    filePointer.write("Total number of test cases with S1 severity = %s\n\n" %(s1count))
+    filePointer.write("Total number of test cases with S2 severity = %s\n\n" %(s2count))
+    filePointer.write("Total number of test cases with S3 severity = %s\n\n" %(s3count))
     filePointer.write("Total number of failed test cases = %s\n\n" %(failcount))
     
     filePointer.write(table)

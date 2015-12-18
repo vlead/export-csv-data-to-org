@@ -126,7 +126,7 @@ Once the statistics is collected from all the test reports then it is
 dumped in a json format inside a statistics.org file.
 
 * Implementation
-** First Program implementation
+** Exporter Program
 *** Code
 #+begin_src python :tangle exporter.py :eval no 
 #######################################################
@@ -222,30 +222,38 @@ def process_experiment(experiment, directory, gitExpUrl):
     linkto =  gitExpUrl + "/" + testCaseFileName
     linkname = testCaseFileName
     referlink = "[[" + linkto + "][" + linkname + "]]"
+    postConditions = False
+    if (re.match('post conditions', experiment.row(0)[12].value, re.IGNORECASE)):
+        postConditions = True
     for row in range(1, totalRows):
         testCaseFileName = experiment.name + "_" + str(row).zfill(2) + "_" + experiment.row(row)[2].value + ".org"
         filepath = directory + "/" + testCaseFileName
         gitTestCaseUrl = gitExpUrl + "/" + testCaseFileName
         testCases.append(gitTestCaseUrl)
-        data =  org_data(experiment.row(row), row)
+        data =  org_data(experiment.row(row), row, postConditions)
         if(row > 1):
             data['conditions'] = "* Pre/Post conditions\n  - Refer to first test case " + referlink + "\n\n"
         write_to_file(filepath, data)
     return testCases
 
-def org_data(rowValue, rowNumber):
+def org_data(rowValue, rowNumber, postConditions):
     data = {}
     data['author'] = "* Author: " + rowValue[10].value + "\n"
     data['date'] = "* Date Created: " + time.strftime("%d %b %Y") + "\n"
     data['environment'] = "* Environment\n" + reorganize_data_version1(rowValue[12].value) + "\n"
     data['objective'] = "* Objective\n" + reorganize_data_version1(rowValue[6].value) + "\n"
-    data['conditions'] = "* Pre/Post conditions\n" + reorganize_data_version2(rowValue[11].value) + "\n"
+    data['preConditions'] = "* Pre conditions\n" + reorganize_data_version2(rowValue[11].value) + "\n"
+    if (postConditions):
+        data['postConditions'] = "* Post conditions\n" + reorganize_data_version2(rowValue[12].value) + "\n"
+        data['review_comments'] = "* Review/comments\n" + reorganize_data_version1(rowValue[15].value) + "\n"
+    else:
+        data['postConditions'] = "* Post conditions\n  - Nil" + "\n"
+        data['review_comments'] = "* Review/comments\n" + reorganize_data_version1(rowValue[14].value) + "\n"
     if (rowNumber == 1):
         data['testSteps'] = "* Test Steps\n" + reorganize_teststeps(rowValue[7].value) + "\n"
     else:
         data['testSteps'] = "* Test Steps\n" + reorganize_data_version2(rowValue[7].value) + "\n"
     data['result'] = "* Expected result\n" + reorganize_data_version2(rowValue[8].value) + "\n"
-    data['review_comments'] = "* Review comments\n" + reorganize_data_version1(rowValue[14].value) + "\n"
     return data
 
 def reorganize_data_version1(data):
@@ -297,7 +305,8 @@ def write_to_file(filepath, data):
     filepointer.write(data['date'].encode("utf-8"))
     filepointer.write(data['environment'].encode("utf-8"))
     filepointer.write(data['objective'].encode("utf-8"))
-    filepointer.write(data['conditions'].encode("utf-8"))
+    filepointer.write(data['preConditions'].encode("utf-8"))
+    filepointer.write(data['postConditions'].encode("utf-8"))
     filepointer.write(data['testSteps'].encode("utf-8"))
     filepointer.write(data['result'].encode("utf-8"))
     filepointer.write(data['review_comments'].encode("utf-8"))
@@ -372,7 +381,7 @@ if __name__ == "__main__":
     main(sys.argv)
 #+end_src
 
-** Second Program Implementation
+** Test report generation Program
 *** Code
 #+begin_src python :tangle testreport.py :eval no
 #######################################################
@@ -403,7 +412,7 @@ expnameColumnwidth = 30
 testcasenameColumnwidth = 50
 passfailColumnwidth = 10
 defectColumnwidth = 15
-
+severityColumnwidth = 12
 allTestCasesLink = []
 
 def main(argv):
@@ -411,12 +420,13 @@ def main(argv):
         print "Please provide the path of the lab directory within quotes in command line!"
     else:
         path = argv[1]
+        targetDir = argv[2]
         if os.path.isdir(path) and os.path.exists(path):
-            walk_over_path(path)
+            walk_over_path(path, targetDir)
         else:
             print "Provided target does not exists!"
 
-def walk_over_path(path):
+def walk_over_path(path, targetDir):
     for root, dirs, files in os.walk(path):
         dirs[:] = [d for d in dirs if not re.match(dirscombined, d)]
         files[:] = [f for f in files if not re.match(filescombinedexclude, f)]
@@ -427,7 +437,7 @@ def walk_over_path(path):
             gitLabUrl = "https://github.com/Virtual-Labs/" + labName
             testCasesLink = createMetaFile(root, files, gitLabUrl)
             allTestCasesLink.extend(testCasesLink)
-    createTestReport(path, labName, gitLabUrl, allTestCasesLink)
+    createTestReport(path, labName, gitLabUrl, allTestCasesLink, targetDir)
     return
 
 def createMetaFile(root, testCases, gitLabUrl):
@@ -449,7 +459,7 @@ def createMetaFile(root, testCases, gitLabUrl):
     filePointer.close()
     return testCasesLink
 
-def generateLine(sno, expname, testcasename, passfail, defectlink, linklength=0):
+def generateLine(sno, expname, testcasename, passfail, severity, defectlink, linklength=0):
     snolength = len(sno); sno = sno + " "*(snoColumnwidth - snolength)
     expnamelength = len(expname); expname = expname + " "*(expnameColumnwidth - expnamelength)
     if (linklength==0):
@@ -457,17 +467,36 @@ def generateLine(sno, expname, testcasename, passfail, defectlink, linklength=0)
     testcasename = testcasename + " "*(testcasenameColumnwidth - linklength)
     passfaillength = len(passfail); passfail = passfail + " "*(passfailColumnwidth - passfaillength)
     defectlinklength = len(defectlink); defectlink = defectlink + " "*(defectColumnwidth - defectlinklength)
-
-    line = "| " + sno + "  |  " + expname + "  |  " + testcasename + "  |  " + passfail + "  |  " + defectlink + " |\n"
+    severitylength = len(severity); severity = severity + " "*(severityColumnwidth - severitylength)
+    line = "| " + sno + "  |  " + expname + "  |  " + testcasename + "  |  " + passfail + "  |  " + severity + " | " + defectlink + " |\n"
     return line
 
 def lineBreak():
-    line  = "|" + "-"*132+ "|\n"
+    line  = "|" + "-"*147+ "|\n"
     return (line)
 
-def createTestReport(root, labName, gitLabUrl, allTestCasesLink):
+def make_directory(directory):
+    if not os.path.exists(directory):
+            os.makedirs(directory)
+    return
+
+def getDateTime():
+    timetuple = time.localtime()
+    date = "%s-%s-%s" %(timetuple[2], timetuple[1], timetuple[0])
+    currenttime = "%s:%s:%s" %(timetuple[3], timetuple[4], timetuple[5])
+    return date, currenttime
+
+def createTestReport(root, labName, gitLabUrl, allTestCasesLink, targetDir):
     commit_id = raw_input("Please enter commit id for lab: %s\n" %(labName))
-    testReportPath = root + "/" + labName + "_" + commit_id + "_testreport.org"
+    date, time = getDateTime()
+
+    projectName = os.path.basename(root)
+    projectDirectory = targetDir + "/"  + projectName
+    make_directory(projectDirectory)
+    testreportDirectory = projectDirectory + "/" + "%s_%s" %(date, commit_id)
+    make_directory(testreportDirectory)
+
+    testReportPath = testreportDirectory + "/" + time + "_testreport.org"
     filePointer = open(testReportPath, 'w')
     filePointer.write("* Test Report\n")
     filePointer.write("** Lab Name : %s\n" %(labName))
@@ -476,9 +505,9 @@ def createTestReport(root, labName, gitLabUrl, allTestCasesLink):
     filePointer.write(lineBreak())
 
     sno = "*Sno"; expname = "Experiment Name"; testcasename = "Test Case";
-    passfail = "Pass/Fail"; defectlink = "Defect Link*";
+    passfail = "Pass/Fail"; severity = "Severity"; defectlink = "Defect Link*";
 
-    line = generateLine(sno, expname, testcasename, passfail, defectlink)
+    line = generateLine(sno, expname, testcasename, passfail, severity, defectlink)
 
     filePointer.write(line)
     filePointer.write(lineBreak())
@@ -489,11 +518,11 @@ def createTestReport(root, labName, gitLabUrl, allTestCasesLink):
         sno = str(count)+ ". ";
         expname = basename.split("_")[0];
         testcasename = "[[" + path + "][" + basename + "]]";
-        passfail = ""; defectlink = "";
+        passfail = ""; defectlink = ""; severity = "";
 
         linklength = len(basename);
 
-        line = generateLine(sno, expname, testcasename, passfail, defectlink, linklength)
+        line = generateLine(sno, expname, testcasename, passfail, severity, defectlink, linklength)
         filePointer.write(line)
         filePointer.write(lineBreak())
         count+=1;
@@ -504,7 +533,7 @@ if __name__ == "__main__":
     main(sys.argv)
 #+end_src
 
-** Third Program Implementation
+** Statistics report genration Program
 *** Code
 #+begin_src python :tangle statistics.py :eval no 
 #######################################################
@@ -584,26 +613,28 @@ def getStatistics(path):
             statistics[splitData[1]] = {}
             statistics[splitData[1]]['fail'] = 0
             statistics[splitData[1]]['pass'] = 0
-        try:
-            if(re.match('pass', splitData[3], re.IGNORECASE)):
-                statistics[splitData[1]]['pass'] += 1
-            elif(re.match('fail', splitData[3], re.IGNORECASE)):
-                statistics[splitData[1]]['fail'] += 1
-        except:
-            if(re.match('pass', splitData[3], re.IGNORECASE)):
-                statistics[splitData[1]] = {}
-                statistics[splitData[1]]['pass'] = 1
-                statistics[splitData[1]]['fail'] = 0
-            elif(re.match('fail', splitData[3], re.IGNORECASE)):
-                statistics[splitData[1]] = {}
-                statistics[splitData[1]]['fail'] = 1
-                statistics[splitData[1]]['pass'] = 0
+            statistics[splitData[1]]['s1'] = 0
+            statistics[splitData[1]]['s2'] = 0
+            statistics[splitData[1]]['s3'] = 0
+        if(re.match('pass', splitData[3], re.IGNORECASE)):
+            statistics[splitData[1]]['pass'] += 1
+        elif(re.match('fail', splitData[3], re.IGNORECASE)):
+            statistics[splitData[1]]['fail'] += 1
+
+        if(re.match('s1', splitData[4], re.IGNORECASE)):
+            statistics[splitData[1]]['s1'] += 1
+        elif(re.match('s2', splitData[4], re.IGNORECASE)):
+            statistics[splitData[1]]['s2'] += 1
+        elif(re.match('s3', splitData[4], re.IGNORECASE)):
+            statistics[splitData[1]]['s3'] += 1
 
     filePointer.close()
     dirname = os.path.dirname(path)
+    filename = os.path.basename(path)
+    time = filename.split("_")[0]
     commitId = commitIdLine.split(" ")[-1].strip("\n")
     labName = labNameLine.split(" ")[-1].strip("\n")
-    exppath = dirname + "/" + labName + "_" + commitId + "_statsreport.org"
+    exppath = dirname + "/" + time + "_stats.org"
     write_to_file_per_lab(exppath, labNameLine, gitLabUrlLine, commitIdLine, statistics)
     return statistics
 
@@ -633,18 +664,22 @@ def write_to_file_per_lab(path, labNameLine, gitLabUrlLine, commitIdLine, data):
     table+= generateLine("*S.no", "Experiment Name", "Pass Count", "Fail Count*")
     table+= lineBreak()
     count = 1
-    passcount = 0;    failcount = 0
+    passcount = 0;    failcount = 0; s1count = 0; s2count = 0; s3count = 0;
     for exp in data:
         sno = str(count);  passcountstr = str(data[exp]['pass']); failcountstr = str(data[exp]['fail'])
         line = generateLine(sno, exp, passcountstr, failcountstr)
         table += line + lineBreak()
-        #line = str(count) + ". \t" + exp + "\t\t"  +str(data[exp]['pass']) + "\t\t" + str(data[exp]['fail']) + "\n"
-        #tab.add_row([count, exp, data[exp]['pass'], data[exp]['fail']])
         passcount+=data[exp]['pass']
         failcount+=data[exp]['fail']
+        s1count+=data[exp]['s1']
+        s2count+=data[exp]['s2']
+        s3count+=data[exp]['s3']
         count+=1
 
     filePointer.write("Total number of passed test cases = %s\n\n" %(passcount))
+    filePointer.write("Total number of test cases with S1 severity = %s\n\n" %(s1count))
+    filePointer.write("Total number of test cases with S2 severity = %s\n\n" %(s2count))
+    filePointer.write("Total number of test cases with S3 severity = %s\n\n" %(s3count))
     filePointer.write("Total number of failed test cases = %s\n\n" %(failcount))
 
     filePointer.write(table)
@@ -655,7 +690,6 @@ def write_to_file_per_lab(path, labNameLine, gitLabUrlLine, commitIdLine, data):
 
 if __name__ == "__main__":
     main(sys.argv)
-
 #+end_src
 * Releases
 ** Release - v1.0

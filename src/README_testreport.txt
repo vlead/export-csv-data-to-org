@@ -4,24 +4,21 @@
 
 1. Description::
 
-This python script generates meta file in org format for each experiment and test report file in org format for each lab.
+This python program generates test report file in org format for each lab.
+Name of the testreport file will be in "<time>_testreport.org" format. Example: "17:49:10_testreport.org"
 
-Format of the meta report generated is as follows:
-<S.no> <Test Case Link to github>
-1. <link1>
-2. <link2>
-
-Format of the test report generated is as follows:
+Test report is generated in org mode as follows:
+"""
 * Test Report
 ** Lab name:
 ** Github URL:
 ** Commit ID:
 
 <test report table>
-
+"""
 
 Meta file for each experiment is saved inside the experiment folder.
-Test report file for each lab is saved inside the lab folder.
+Test report file for each lab is saved in the directory specified in the argument passed to the program.
 
 2. Prerequisite::
 a. Test cases for each lab are already generated in org format.
@@ -30,9 +27,9 @@ a. Test cases for each lab are already generated in org format.
 3. Running the script::
 Script can be executed as follows:
 
-$ python testreport.py <absoulte path to lab folder where org files are present>
+$ python testreport.py <absoulte path to lab folder where org files are present> <path to test-report directory>
 
 Example:
-$ python testreport.py '/home/centos/QA-Legacy/IIIT Hyderabad/problem-solving-iiith'
+$ python testreport.py '/home/centos/QA-Legacy/IIIT Hyderabad/problem-solving-iiith' '/home/centos/test-report'
 
 

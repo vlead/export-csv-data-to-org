@@ -26,7 +26,7 @@ expnameColumnwidth = 30
 testcasenameColumnwidth = 50
 passfailColumnwidth = 10
 defectColumnwidth = 15
-
+severityColumnwidth = 12
 allTestCasesLink = []
 
 def main(argv):
@@ -34,12 +34,13 @@ def main(argv):
         print "Please provide the path of the lab directory within quotes in command line!"
     else:
         path = argv[1]
+        targetDir = argv[2]
         if os.path.isdir(path) and os.path.exists(path):
-            walk_over_path(path)
+            walk_over_path(path, targetDir)
         else:
             print "Provided target does not exists!"
 
-def walk_over_path(path):
+def walk_over_path(path, targetDir):
     for root, dirs, files in os.walk(path):
         dirs[:] = [d for d in dirs if not re.match(dirscombined, d)]
         files[:] = [f for f in files if not re.match(filescombinedexclude, f)]
@@ -50,7 +51,7 @@ def walk_over_path(path):
             gitLabUrl = "https://github.com/Virtual-Labs/" + labName
             testCasesLink = createMetaFile(root, files, gitLabUrl)
             allTestCasesLink.extend(testCasesLink)
-    createTestReport(path, labName, gitLabUrl, allTestCasesLink)
+    createTestReport(path, labName, gitLabUrl, allTestCasesLink, targetDir)
     return
 
 def createMetaFile(root, testCases, gitLabUrl):
@@ -72,7 +73,7 @@ def createMetaFile(root, testCases, gitLabUrl):
     filePointer.close()
     return testCasesLink
 
-def generateLine(sno, expname, testcasename, passfail, defectlink, linklength=0):
+def generateLine(sno, expname, testcasename, passfail, severity, defectlink, linklength=0):
     snolength = len(sno); sno = sno + " "*(snoColumnwidth - snolength)
     expnamelength = len(expname); expname = expname + " "*(expnameColumnwidth - expnamelength)
     if (linklength==0):
@@ -80,12 +81,12 @@ def generateLine(sno, expname, testcasename, passfail, defectlink, linklength=0)
     testcasename = testcasename + " "*(testcasenameColumnwidth - linklength)
     passfaillength = len(passfail); passfail = passfail + " "*(passfailColumnwidth - passfaillength)
     defectlinklength = len(defectlink); defectlink = defectlink + " "*(defectColumnwidth - defectlinklength)
-
-    line = "| " + sno + "  |  " + expname + "  |  " + testcasename + "  |  " + passfail + "  |  " + defectlink + " |\n"
+    severitylength = len(severity); severity = severity + " "*(severityColumnwidth - severitylength)
+    line = "| " + sno + "  |  " + expname + "  |  " + testcasename + "  |  " + passfail + "  |  " + severity + " | " + defectlink + " |\n"
     return line
 
 def lineBreak():
-    line  = "|" + "-"*132+ "|\n"
+    line  = "|" + "-"*147+ "|\n"
     return (line)
 
 def make_directory(directory):
@@ -93,13 +94,23 @@ def make_directory(directory):
             os.makedirs(directory)
     return
 
-def createTestReport(root, labName, gitLabUrl, allTestCasesLink):
+def getDateTime():
+    timetuple = time.localtime()
+    date = "%s-%s-%s" %(timetuple[2], timetuple[1], timetuple[0])
+    currenttime = "%s:%s:%s" %(timetuple[3], timetuple[4], timetuple[5])
+    return date, currenttime
+
+def createTestReport(root, labName, gitLabUrl, allTestCasesLink, targetDir):
     commit_id = raw_input("Please enter commit id for lab: %s\n" %(labName))
+    date, time = getDateTime()
+    
+    projectName = os.path.basename(root)
+    projectDirectory = targetDir + "/"  + projectName
+    make_directory(projectDirectory)
+    testreportDirectory = projectDirectory + "/" + "%s_%s" %(date, commit_id)
+    make_directory(testreportDirectory)
 
-    directory = "Date_commitid"
-    make_directory()
-
-    testReportPath = root + "/" + labName + "_" + commit_id + "_testreport.org" 
+    testReportPath = testreportDirectory + "/" + time + "_testreport.org" 
     filePointer = open(testReportPath, 'w')
     filePointer.write("* Test Report\n")
     filePointer.write("** Lab Name : %s\n" %(labName))
@@ -108,9 +119,9 @@ def createTestReport(root, labName, gitLabUrl, allTestCasesLink):
     filePointer.write(lineBreak())
 
     sno = "*Sno"; expname = "Experiment Name"; testcasename = "Test Case";
-    passfail = "Pass/Fail"; defectlink = "Defect Link*";
+    passfail = "Pass/Fail"; severity = "Severity"; defectlink = "Defect Link*"; 
 
-    line = generateLine(sno, expname, testcasename, passfail, defectlink)
+    line = generateLine(sno, expname, testcasename, passfail, severity, defectlink)
 
     filePointer.write(line)
     filePointer.write(lineBreak())
@@ -121,11 +132,11 @@ def createTestReport(root, labName, gitLabUrl, allTestCasesLink):
         sno = str(count)+ ". "; 
         expname = basename.split("_")[0];
         testcasename = "[[" + path + "][" + basename + "]]";
-        passfail = ""; defectlink = "";
+        passfail = ""; defectlink = ""; severity = ""; 
 
         linklength = len(basename); 
 
-        line = generateLine(sno, expname, testcasename, passfail, defectlink, linklength)
+        line = generateLine(sno, expname, testcasename, passfail, severity, defectlink, linklength)
         filePointer.write(line)
         filePointer.write(lineBreak())
         count+=1;
