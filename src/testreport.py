@@ -88,8 +88,17 @@ def lineBreak():
     line  = "|" + "-"*132+ "|\n"
     return (line)
 
+def make_directory(directory):
+    if not os.path.exists(directory):
+            os.makedirs(directory)
+    return
+
 def createTestReport(root, labName, gitLabUrl, allTestCasesLink):
     commit_id = raw_input("Please enter commit id for lab: %s\n" %(labName))
+
+    directory = "Date_commitid"
+    make_directory()
+
     testReportPath = root + "/" + labName + "_" + commit_id + "_testreport.org" 
     filePointer = open(testReportPath, 'w')
     filePointer.write("* Test Report\n")
