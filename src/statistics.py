@@ -120,6 +120,7 @@ def write_to_file_per_lab(path, labNameLine, gitLabUrlLine, commitIdLine, data):
     filePointer.write(labNameLine)
     filePointer.write(gitLabUrlLine)
     filePointer.write(commitIdLine)
+    filePointer.write("** Detailed Statistics : https://github.com/issues\n")
     filePointer.write("\n")
    
     table = lineBreak()
