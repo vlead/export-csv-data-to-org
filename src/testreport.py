@@ -36,11 +36,15 @@ def main(argv):
         path = argv[1]
         targetDir = argv[2]
         if os.path.isdir(path) and os.path.exists(path):
+            path = path.rstrip("/")
+            targetDir = targetDir.rstrip("/")
             walk_over_path(path, targetDir)
         else:
             print "Provided target does not exists!"
 
 def walk_over_path(path, targetDir):
+    projectName = os.path.basename(path)
+    path = path + "/test-cases/integration_test-cases/"
     for root, dirs, files in os.walk(path):
         dirs[:] = [d for d in dirs if not re.match(dirscombined, d)]
         files[:] = [f for f in files if not re.match(filescombinedexclude, f)]
@@ -51,7 +55,7 @@ def walk_over_path(path, targetDir):
             gitLabUrl = "https://github.com/Virtual-Labs/" + labName
             testCasesLink = createMetaFile(root, files, gitLabUrl)
             allTestCasesLink.extend(testCasesLink)
-    createTestReport(path, labName, gitLabUrl, allTestCasesLink, targetDir)
+    createTestReport(projectName, labName, gitLabUrl, allTestCasesLink, targetDir)
     return
 
 def createMetaFile(root, testCases, gitLabUrl):
@@ -100,11 +104,10 @@ def getDateTime():
     currenttime = "%s:%s:%s" %(timetuple[3], timetuple[4], timetuple[5])
     return date, currenttime
 
-def createTestReport(root, labName, gitLabUrl, allTestCasesLink, targetDir):
+def createTestReport(projectName, labName, gitLabUrl, allTestCasesLink, targetDir):
     commit_id = raw_input("Please enter commit id for lab: %s\n" %(labName))
     date, time = getDateTime()
     
-    projectName = os.path.basename(root)
     projectDirectory = targetDir + "/"  + projectName
     make_directory(projectDirectory)
     testreportDirectory = projectDirectory + "/" + "%s_%s" %(date, commit_id)
