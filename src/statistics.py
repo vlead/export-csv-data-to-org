@@ -66,6 +66,8 @@ def getStatistics(path):
     commitIdLine = filePointer.readline()
     filePointer.readline(); filePointer.readline(); filePointer.readline(); filePointer.readline()
     for line in filePointer.readlines():
+        if (line == "\n"):
+            continue
         line = line.strip("|\n")
         if re.match('--', line):
             continue
