@@ -139,9 +139,9 @@ def write_to_file_per_lab(path, labNameLine, gitLabUrlLine, commitIdLine, data):
         count+=1
 
     filePointer.write("Total number of passed test cases = %s\n\n" %(passcount))
-    filePointer.write("Total number of test cases with S1 severity = %s\n\n" %(s1count))
-    filePointer.write("Total number of test cases with S2 severity = %s\n\n" %(s2count))
-    filePointer.write("Total number of test cases with S3 severity = %s\n\n" %(s3count))
+    filePointer.write("Total number of defects with S1 severity = %s\n\n" %(s1count))
+    filePointer.write("Total number of defects with S2 severity = %s\n\n" %(s2count))
+    filePointer.write("Total number of defects with S3 severity = %s\n\n" %(s3count))
     filePointer.write("Total number of failed test cases = %s\n\n" %(failcount))
     
     filePointer.write(table)
