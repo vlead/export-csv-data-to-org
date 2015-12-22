@@ -15,8 +15,8 @@ import time
 filesexclude = set([".*testreport.org~", ".*statsreport.org", "README.md", ".*metafile.org", ".*stats.org", ".*testreport.org", ".*.xlsx", ".*.html"])
 filescombinedexclude = "(" + ")|(".join(filesexclude) + ")"
 
-filesinclude = set([".*org"])
-filescombinedinclude = "(" + ")|(".join(filesinclude) + ")"
+#filesinclude = set([".*org"])
+#filescombinedinclude = "(" + ")|(".join(filesinclude) + ")"
 
 dirsexclude = set([".git", "IIT Bombay", "Amrita", "NIT Karnataka"])
 dirscombined = "(" + ")|(".join(dirsexclude) + ")"
@@ -44,17 +44,23 @@ def main(argv):
 
 def walk_over_path(path, targetDir):
     projectName = os.path.basename(path)
+    testReportPath = path + "/testreport.org"
     path = path + "/test-cases/integration_test-cases/"
     for root, dirs, files in os.walk(path):
         dirs[:] = [d for d in dirs if not re.match(dirscombined, d)]
         files[:] = [f for f in files if not re.match(filescombinedexclude, f)]
-        files[:] = [f for f in files if re.match(filescombinedinclude, f)]
+        #files[:] = [f for f in files if re.match(filescombinedinclude, f)]
         if files:
             files = sorted(files)
             labName = root.split("/")[-2]
             gitLabUrl = "https://github.com/Virtual-Labs/" + labName
             testCasesLink = createMetaFile(root, files, gitLabUrl)
             allTestCasesLink.extend(testCasesLink)
+    linkToTestReport = "https://github.com/Virtual-Labs/test-report/tree/master/" + projectName
+    filePointer = open(testReportPath, 'w')
+    content = "[[%s][View test report for lab %s]]" %(linkToTestReport, projectName)
+    filePointer.write(content)
+    filePointer.close()
     createTestReport(projectName, labName, gitLabUrl, allTestCasesLink, targetDir)
     return
 

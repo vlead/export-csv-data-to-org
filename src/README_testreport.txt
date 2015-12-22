@@ -31,6 +31,8 @@ a. Test cases for each lab are already generated in org format.
 Script can be executed as follows:
 
 $ python testreport.py <absoulte path to lab folder> <path to test-report directory>
+Lab folder should contain only test cases files(org) to be processed.
+It should not contain any unwanted files.
 
 Example:
 $ python testreport.py '/home/centos/QA-Legacy/IIIT Hyderabad/problem-solving-iiith' '/home/centos/test-report'
