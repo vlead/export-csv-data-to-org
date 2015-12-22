@@ -101,7 +101,7 @@ def process_experiment(experiment, directory, gitExpUrl):
         testCases.append(gitTestCaseUrl)
         data =  org_data(experiment.row(row), row, postConditions)
         if(row > 1):
-            data['conditions'] = "* Pre/Post conditions\n  - Refer to first test case " + referlink + "\n\n"
+            data['preConditions'] = "* Pre/Post conditions\n  - Refer to first test case " + referlink + "\n\n"
         write_to_file(filepath, data)
     return testCases
 
