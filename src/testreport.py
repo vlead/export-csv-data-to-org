@@ -42,11 +42,22 @@ def main(argv):
         else:
             print "Provided target does not exists!"
 
+def create_a_testreport_inside_project(projectName, path):
+    testReportPath = path + "/testreport.org"
+    linkToTestReport = "https://github.com/Virtual-Labs/test-report/tree/master/" + projectName
+    if not os.path.isfile(testReportPath):
+        filePointer = open(testReportPath, 'w')
+        content = "[[%s][View Test Report for %s Lab]]" %(linkToTestReport, projectName)
+        filePointer.write(content)
+        filePointer.close()
+    return
+
+
 def walk_over_path(path, targetDir):
     projectName = os.path.basename(path)
-    testReportPath = path + "/testreport.org"
-    path = path + "/test-cases/integration_test-cases/"
-    for root, dirs, files in os.walk(path):
+    create_testreport_inside_project(projectName, path)
+    testCasesPath = path + "/test-cases/integration_test-cases/"
+    for root, dirs, files in os.walk(testCasesPath):
         dirs[:] = [d for d in dirs if not re.match(dirscombined, d)]
         files[:] = [f for f in files if not re.match(filescombinedexclude, f)]
         #files[:] = [f for f in files if re.match(filescombinedinclude, f)]
@@ -56,11 +67,6 @@ def walk_over_path(path, targetDir):
             gitLabUrl = "https://github.com/Virtual-Labs/" + labName
             testCasesLink = createMetaFile(root, files, gitLabUrl)
             allTestCasesLink.extend(testCasesLink)
-    linkToTestReport = "https://github.com/Virtual-Labs/test-report/tree/master/" + projectName
-    filePointer = open(testReportPath, 'w')
-    content = "[[%s][View test report for lab %s]]" %(linkToTestReport, projectName)
-    filePointer.write(content)
-    filePointer.close()
     createTestReport(projectName, labName, gitLabUrl, allTestCasesLink, targetDir)
     return
 

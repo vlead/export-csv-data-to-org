@@ -23,6 +23,9 @@ snoColumnwidth = 5
 expnameColumnwidth = 30
 passColumnwidth = 10
 failColumnwidth = 11
+s1Columnwidth = 5
+s2Columnwidth = 5
+s3Columnwidth = 5
 
 
 def main(argv):
@@ -102,17 +105,21 @@ def getStatistics(path):
     write_to_file_per_lab(exppath, labNameLine, gitLabUrlLine, commitIdLine, statistics)
     return statistics
 
-def generateLine(sno, expname, passcount, failcount):
+def generateLine(sno, expname, passcount, s1, s2, s3, failcount):
     snolength = len(sno); sno = sno + " "*(snoColumnwidth - snolength)
     expnamelength = len(expname); expname = expname + " "*(expnameColumnwidth - expnamelength)
     passcountlength = len(passcount); passcount = passcount + " "*(passColumnwidth - passcountlength)
     failcountlength = len(failcount); failcount = failcount + " "*(failColumnwidth - failcountlength)
+    s1length = len(s1); s1 = s1 + " "*(s1Columnwidth - s1length)
+    s2length = len(s2); s2 = s2 + " "*(s2Columnwidth - s2length)
+    s3length = len(s3); s3 = s3 + " "*(s3Columnwidth - s3length)
 
-    line = "| " + sno + "  |  " + expname + "  |  " + passcount + "  |  " + failcount + " |\n"
+    line = "| " + sno + "  |  " + expname + "  |  " + passcount + "  |  " + s1 + "  |  "  + s2 + "  |  " + s3 + "  |  " + failcount + " |\n"
     return line
 
 def lineBreak():
-    line  = "|" + "-"*73+ "|\n"
+    totalwidth = snoColumnwidth + expnameColumnwidth + passColumnwidth + failColumnwidth + s1Columnwidth + s2Columnwidth + s3Columnwidth + 32; 
+    line  = "|" + "-"*totalwidth+ "|\n"
     return (line)
 
 
@@ -126,13 +133,14 @@ def write_to_file_per_lab(path, labNameLine, gitLabUrlLine, commitIdLine, data):
     filePointer.write("\n")
    
     table = lineBreak()
-    table+= generateLine("*S.no", "Experiment Name", "Pass Count", "Fail Count*")
+    table+= generateLine("*S.no", "Experiment Name", "Pass Count", "S1", "S2", "S3", "Fail Count*")
     table+= lineBreak() 
     count = 1
     passcount = 0;    failcount = 0; s1count = 0; s2count = 0; s3count = 0;
     for exp in data:
-        sno = str(count);  passcountstr = str(data[exp]['pass']); failcountstr = str(data[exp]['fail'])
-        line = generateLine(sno, exp, passcountstr, failcountstr)
+        sno = str(count) + ".";  passcountstr = str(data[exp]['pass']); failcountstr = str(data[exp]['fail'])
+        s1 = str(data[exp]['s1']); s2 = str(data[exp]['s2']); s3 = str(data[exp]['s3']);
+        line = generateLine(sno, exp, passcountstr, s1, s2, s3, failcountstr)
         table += line + lineBreak()
         passcount+=data[exp]['pass']
         failcount+=data[exp]['fail']

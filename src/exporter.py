@@ -95,7 +95,11 @@ def process_experiment(experiment, directory, gitExpUrl):
     if (re.match('post conditions', experiment.row(0)[12].value, re.IGNORECASE)):
         postConditions = True
     for row in range(1, totalRows):
-        testCaseFileName = experiment.name + "_" + str(row).zfill(2) + "_" + experiment.row(row)[2].value + ".org"
+        if (re.match('system', experiment.name, re.IGNORECASE)):
+            labName = experiment.row(row)[0].value.rstrip(" Lab")
+            testCaseFileName = labName + "_" + str(row).zfill(2) + "_" + experiment.row(row)[2].value + ".org"            
+        else:
+            testCaseFileName = experiment.name + "_" + str(row).zfill(2) + "_" + experiment.row(row)[2].value + ".org"
         filepath = directory + "/" + testCaseFileName
         gitTestCaseUrl = gitExpUrl + "/" + testCaseFileName
         testCases.append(gitTestCaseUrl)
