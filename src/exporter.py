@@ -11,6 +11,8 @@ import os
 import sys
 import re
 import time
+import urllib
+
 
 filesexclude = set(["README.md"])
 filescombined = "(" + ")|(".join(filesexclude) + ")"
@@ -192,6 +194,7 @@ def createMetaFile(testCases, metaFilePath):
     filePointer.write("S.no\t\tTest case link\n")
     count = 1
     for path in testCases:
+        path = urllib.quote(path)
         basename = os.path.basename(path)
         line = str(count) + ". " + "\t" + "[[" + path + "][" + basename + "]]" + "\n"
         filePointer.write(line)
