@@ -44,7 +44,7 @@ def main(argv):
 
 def create_a_testreport_inside_project(projectName, path):
     testReportPath = path + "/testreport.org"
-    linkToTestReport = "https://github.com/Virtual-Labs/test-report/tree/master/" + projectName
+    linkToTestReport = "https://github.com/Virtual-Labs/test-reports/tree/master/" + projectName
     if not os.path.isfile(testReportPath):
         filePointer = open(testReportPath, 'w')
         content = "[[%s][View Test Report for %s Lab]]" %(linkToTestReport, projectName)
