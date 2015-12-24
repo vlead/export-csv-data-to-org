@@ -63,11 +63,10 @@ def walk_over_path(path, targetDir):
         #files[:] = [f for f in files if re.match(filescombinedinclude, f)]
         if files:
             files = sorted(files)
-            labName = root.split("/")[-2]
-            gitLabUrl = "https://github.com/Virtual-Labs/" + labName
+            gitLabUrl = "https://github.com/Virtual-Labs/" + projectName
             testCasesLink = createMetaFile(root, files, gitLabUrl)
             allTestCasesLink.extend(testCasesLink)
-    createTestReport(projectName, labName, gitLabUrl, allTestCasesLink, targetDir)
+    createTestReport(projectName, gitLabUrl, allTestCasesLink, targetDir)
     return
 
 def createMetaFile(root, testCases, gitLabUrl):
@@ -76,8 +75,6 @@ def createMetaFile(root, testCases, gitLabUrl):
     filePointer = open(metaFilePath, 'w')
     filePointer.write("S.no\t\tTest case link\n")
     count = 1
-    labName = root.split("/")[-2]
-    expname = root.split("/")[-1]
     gitExpUrlPartial = gitLabUrl +  "/blob/master/test-cases/integration_test-cases/" + expname
     testCasesLink = []
     for path in testCases:
@@ -116,8 +113,8 @@ def getDateTime():
     currenttime = "%s:%s:%s" %(timetuple[3], timetuple[4], timetuple[5])
     return date, currenttime
 
-def createTestReport(projectName, labName, gitLabUrl, allTestCasesLink, targetDir):
-    commit_id = raw_input("Please enter commit id for lab: %s\n" %(labName))
+def createTestReport(projectName, gitLabUrl, allTestCasesLink, targetDir):
+    commit_id = raw_input("Please enter commit id for lab: %s\n" %(projectName))
     date, time = getDateTime()
     
     projectDirectory = targetDir + "/"  + projectName
@@ -128,7 +125,7 @@ def createTestReport(projectName, labName, gitLabUrl, allTestCasesLink, targetDi
     testReportPath = testreportDirectory + "/" + time + "_testreport.org" 
     filePointer = open(testReportPath, 'w')
     filePointer.write("* Test Report\n")
-    filePointer.write("** Lab Name : %s\n" %(labName))
+    filePointer.write("** Lab Name : %s\n" %(projectName))
     filePointer.write("** GitHub URL : %s\n" %(gitLabUrl))
     filePointer.write("** Commit ID : %s\n\n" %(commit_id))
     filePointer.write(lineBreak())
