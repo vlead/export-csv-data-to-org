@@ -42,7 +42,7 @@ def main(argv):
         else:
             print "Provided target does not exists!"
 
-def create_a_testreport_inside_project(projectName, path):
+def create_testreport_inside_project(projectName, path):
     testReportPath = path + "/testreport.org"
     linkToTestReport = "https://github.com/Virtual-Labs/test-reports/tree/master/" + projectName
     if not os.path.isfile(testReportPath):
