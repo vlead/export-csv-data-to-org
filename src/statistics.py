@@ -33,20 +33,21 @@ def main(argv):
         print "Please provide the path of the file/directory within quotes in command line!"
     else:
         path = argv[1]
-        if os.path.isfile(path):
-            single_file(path)
-        else:
-            walk_over_path(path)
+	if os.path.exists(path):
+	    if os.path.isfile(path):
+	        single_file(path)
+	    elif os.path.isdir(path):
+		walk_over_path(path)
+    return
 
 def single_file(path):
     basename = os.path.basename(path)
     basedir = os.path.dirname(path)
     name, extension = os.path.splitext(basename)
     if (re.match(".*_testreport.org", basename)):
-        totalStatistics = {}
         statistics = getStatistics(path)
     else:
-        print "Program does not support the provided file format!"
+        print "Program does not support the %s file format!" %(extension)
     return
 
 def walk_over_path(path):
@@ -55,7 +56,7 @@ def walk_over_path(path):
         files[:] = [f for f in files if re.match(filescombined, f) and not re.match(filescombinedexcl, f)]
         for f in files:
             if (re.match(".*_testreport.org", f)):
-                filePath = root + "/" + f
+                filePath = os.path.join(root, f)
                 statistics = getStatistics(filePath)
     return
 
@@ -76,24 +77,27 @@ def getStatistics(path):
             continue
         splitData = line.split('|')
         splitData = [item.strip() for item in splitData]
-        if (splitData[1] not in statistics):
-            statistics[splitData[1]] = {}
-            statistics[splitData[1]]['fail'] = 0
-            statistics[splitData[1]]['pass'] = 0
-            statistics[splitData[1]]['s1'] = 0
-            statistics[splitData[1]]['s2'] = 0
-            statistics[splitData[1]]['s3'] = 0
-        if(re.match('pass', splitData[3], re.IGNORECASE)):
-            statistics[splitData[1]]['pass'] += 1
-        elif(re.match('fail', splitData[3], re.IGNORECASE)):
-            statistics[splitData[1]]['fail'] += 1
+	expname = splitData[1]
+	passFail = splitData[3]
+	severity = splitData[4]
+        if (expname not in statistics):
+            statistics[expname] = {}
+            statistics[expname]['fail'] = 0
+            statistics[expname]['pass'] = 0
+            statistics[expname]['s1'] = 0
+            statistics[expname]['s2'] = 0
+            statistics[expname]['s3'] = 0
+        if(re.match('pass', passFail, re.IGNORECASE)):
+            statistics[expname]['pass'] += 1
+        elif(re.match('fail', passFail, re.IGNORECASE)):
+            statistics[expname]['fail'] += 1
         
-        if(re.match('s1', splitData[4], re.IGNORECASE)):
-            statistics[splitData[1]]['s1'] += 1
-        elif(re.match('s2', splitData[4], re.IGNORECASE)):
-            statistics[splitData[1]]['s2'] += 1
-        elif(re.match('s3', splitData[4], re.IGNORECASE)):
-            statistics[splitData[1]]['s3'] += 1
+        if(re.match('s1', severity, re.IGNORECASE)):
+            statistics[expname]['s1'] += 1
+        elif(re.match('s2', severity, re.IGNORECASE)):
+            statistics[expname]['s2'] += 1
+        elif(re.match('s3', severity, re.IGNORECASE)):
+            statistics[expname]['s3'] += 1
 
     filePointer.close()
     dirname = os.path.dirname(path)
@@ -154,9 +158,7 @@ def write_to_file_per_lab(path, labNameLine, gitLabUrlLine, commitIdLine, data):
     filePointer.write("Total number of defects with S2 severity = %s\n\n" %(s2count))
     filePointer.write("Total number of defects with S3 severity = %s\n\n" %(s3count))
     filePointer.write("Total number of failed test cases = %s\n\n" %(failcount))
-    
     filePointer.write(table)
-
     filePointer.close()
     return
 
