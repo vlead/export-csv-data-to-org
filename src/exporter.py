@@ -42,10 +42,10 @@ def main(argv):
     return
 
 def single_file(path):
-    filenameName = os.path.basename(path)
-    name, extension = os.path.splitext(fileName)
+    fileName = os.path.basename(path)
+    root, extension = os.path.splitext(fileName)
     if (extension == '.xlsx'):
-        process_lab_file(path, name)
+        process_lab_file(path)
     else:
         print "Program does not support the %s file format." %(extension)
     return
@@ -57,30 +57,30 @@ def walk_over_path(path):
         for f in files:
             name, extension = os.path.splitext(f)
             if (extension == '.xlsx'):
-                path = root + "/" + f
-                process_lab_file(path, name)
+                path = os.path.join(root, f)
+                process_xlsx_file(path)
     return
 
-def process_lab_file(path, labName):
-    book = xlrd.open_workbook(path)
-    number_of_experiments = book.nsheets
-    parentDirectory = os.path.dirname(path)
-    directory = parentDirectory + "/" + labName
-    gitLabUrl = "https://github.com/Virtual-Labs/" + labName
-    make_directory(directory)
-    parentDirectory = directory
-    labTestCases = []
-    expToTestCasesCount = []
-    for expIndex in range(number_of_experiments):
+def process_lab_file(path):
+    try:
+        book = xlrd.open_workbook(path)
+    except:
+        print "%s does not have read permission" %(path)
+        return
+    labDirectory, extension = os.path.splitext(path)
+    labName = os.path.basename(labDirectory)
+    make_directory(labDirectory)
+    numberOfExp = book.nsheets
+    gitLabUrl = os.path.join("https://github.com/Virtual-Labs/", labName)
+    labTestCasesUrl = []
+    labTestCasesName = []
+    for expIndex in range(numberOfExp):
         experiment = book.sheet_by_index(expIndex)
-        directory = parentDirectory + "/" + experiment.name
-        gitExpUrl = gitLabUrl +  "/blob/master/test-cases/integration_test-cases" + "/" + experiment.name
-        make_directory(directory)
-        testCases = process_experiment(experiment, directory, gitExpUrl)
-        metaFilePath = directory + "/" + experiment.name + "_metafile.org"
-        createMetaFile(testCases, metaFilePath)
-        labTestCases.extend(testCases)
-    createTestReport(parentDirectory, labTestCases, labName, gitLabUrl)
+        #testCases = process_experiment(experiment, expDirectory, gitExpUrl)
+        expTestCasesUrl, expTestCasesName = process_experiment(experiment, labDirectory, gitLabUrl)
+        labTestCasesUrl.extend(expTestCasesUrl)
+        labTestCasesName.extend(expTestCasesName)
+    createTestReport(labDirectory, labTestCasesUrl, labTestCasesName, labName, gitLabUrl)
     return
 
 def make_directory(directory):
@@ -88,30 +88,46 @@ def make_directory(directory):
             os.makedirs(directory)
     return
 
-def process_experiment(experiment, directory, gitExpUrl):
+
+#def process_test_case():
+
+#def process_experiment(experiment, directory, gitExpUrl):
+def process_experiment(experiment, labDirectory, gitLabUrl):
+    expName = experiment.name
+    expDirectory = os.path.join(labDirectory, expName)
+    make_directory(expDirectory)
+
+    gitExpUrl = os.path.join(gitLabUrl, "blob/master/test-cases/integration_test-cases", expName)
+
     totalRows = experiment.nrows
-    testCases = []
-    testCaseFileName = experiment.name + "_01_" +  experiment.row(1)[2].value + ".org"
-    linkto =  gitExpUrl + "/" + testCaseFileName
-    linkname = testCaseFileName
-    referlink = "[[" + linkto + "][" + linkname + "]]"
+    expTestCasesUrl = []
+    expTestCasesName = []
+    feature = experiment.row(1)[2].value
+    testCaseFileName = expName + "_01_" +  feature + ".org"
+    linkto =  os.path.join(gitExpUrl, testCaseFileName)
+    referlink = "[[" + linkto + "][" + testCaseFileName + "]]"
     postConditions = False
     if (re.match('post conditions', experiment.row(0)[12].value, re.IGNORECASE)):
         postConditions = True
+    if (re.match('system', expName, re.IGNORECASE)):
+        prefix = experiment.row(1)[0].value.rstrip(" Lab")
+    else:
+        prefix = expName
     for row in range(1, totalRows):
-        if (re.match('system', experiment.name, re.IGNORECASE)):
-            labName = experiment.row(row)[0].value.rstrip(" Lab")
-            testCaseFileName = labName + "_" + str(row).zfill(2) + "_" + experiment.row(row)[2].value + ".org"            
-        else:
-            testCaseFileName = experiment.name + "_" + str(row).zfill(2) + "_" + experiment.row(row)[2].value + ".org"
-        filepath = directory + "/" + testCaseFileName
-        gitTestCaseUrl = gitExpUrl + "/" + testCaseFileName
-        testCases.append(gitTestCaseUrl)
+        testCaseFileName = prefix + "_" + str(row).zfill(2) + "_" + experiment.row(row)[2].value + ".org"            
+        filepath = os.path.join(expDirectory, testCaseFileName)
+        gitTestCaseUrl = os.path.join(gitExpUrl, urllib.quote(testCaseFileName))
+        expTestCasesUrl.append(gitTestCaseUrl)
+        expTestCasesName.append(testCaseFileName)
         data =  org_data(experiment.row(row), row, postConditions)
         if(row > 1):
-            data['preConditions'] = "* Pre/Post conditions\n  - Refer to first test case " + referlink + "\n\n"
+            data['preConditions'] = "* Pre conditions\n  - Refer to first test case " + referlink + "\n\n"
         write_to_file(filepath, data)
-    return testCases
+
+    metaFileName = expName + "_metafile.org"
+    metaFilePath = os.path.join(expDirectory, metaFileName)
+    createMetaFile(expTestCasesUrl, expTestCasesName, metaFilePath)
+    return expTestCasesUrl, expTestCasesName
 
 def org_data(rowValue, rowNumber, postConditions):
     data = {}
@@ -191,14 +207,13 @@ def write_to_file(filepath, data):
     filepointer.close()
     return
 
-def createMetaFile(testCases, metaFilePath):
+def createMetaFile(testCasesUrl, testCasesName, metaFilePath):
     filePointer = open(metaFilePath, 'w')
     filePointer.write("S.no\t\tTest case link\n")
+    length = len(testCasesUrl)
     count = 1
-    for path in testCases:
-        path = urllib.quote(path)
-        basename = os.path.basename(path)
-        line = str(count) + ". " + "\t" + "[[" + path + "][" + basename + "]]" + "\n"
+    for index in range(length):
+        line = str(count) + ". " + "\t" + "[[" + testCasesUrl[index] + "][" + testCasesName[index] + "]]" + "\n"
         filePointer.write(line)
         count+=1
     filePointer.close()
@@ -221,7 +236,7 @@ def lineBreak():
     return (line)
 
 
-def createTestReport(parentDirectory, labTestCases, labName, gitLabUrl):
+def createTestReport(parentDirectory, labTestCasesUrl, labTestCasesName, labName, gitLabUrl):
     commit_id = raw_input("Please enter commit id to generate test report for lab: %s\n" %(labName))
     testReportPath = parentDirectory + "/" + labName + "_" + commit_id + "_testreport.org"
     filePointer = open(testReportPath, 'w')
@@ -238,17 +253,16 @@ def createTestReport(parentDirectory, labTestCases, labName, gitLabUrl):
     
     filePointer.write(lineBreak())
     count = 1;
-    for path in labTestCases:
-        basename = os.path.basename(path)
-        
+    length = len(labTestCasesUrl)
+    for index in range(length):
+        testCaseName = labTestCasesName[index]
         sno = str(count)+ ". "; 
-        expname = basename.split("_")[0];
-        testcasename = "[[" + path + "][" + basename + "]]";
+        expname = testCaseName.split("_")[0];
+        testCaseLink = "[[" + labTestCasesUrl[index] + "][" + labTestCasesName[index] + "]]";
         passfail = " "; defectlink = " ";
 
-        linklength = len(basename);
-
-        line = generateLine(sno, expname, testcasename, passfail, defectlink, linklength)
+        linklength = len(testCaseName)
+        line = generateLine(sno, expname, testCaseLink, passfail, defectlink, linklength)
         filePointer.write(line)
         filePointer.write(lineBreak())
         count+=1; 
