@@ -35,35 +35,34 @@ def main(argv):
     else:
         path = argv[1]
         targetDir = argv[2]
-        if os.path.isdir(path) and os.path.exists(path):
-            path = path.rstrip("/")
-            targetDir = targetDir.rstrip("/")
+        if os.path.exists(path) and os.path.isdir(path):
+	    path = path.rstrip("/")
             walk_over_path(path, targetDir)
         else:
             print "Provided target does not exists!"
+    return
 
 def create_testreport_inside_project(projectName, path):
-    testReportPath = path + "/testreport.org"
-    linkToTestReport = "https://github.com/Virtual-Labs/test-reports/tree/master/" + projectName
-    if not os.path.isfile(testReportPath):
+    testReportPath = os.path.join(path, "testreport.org")
+    linkToTestReport = os.path.join("https://github.com/Virtual-Labs/test-reports/tree/master/", projectName)
+    if not os.path.exists(testReportPath):
         filePointer = open(testReportPath, 'w')
-        content = "[[%s][View Test Report for %s Lab]]" %(linkToTestReport, projectName)
+        content = "[[%s][View Test Reports for %s Lab]]" %(linkToTestReport, projectName)
         filePointer.write(content)
         filePointer.close()
     return
 
-
 def walk_over_path(path, targetDir):
     projectName = os.path.basename(path)
     create_testreport_inside_project(projectName, path)
-    testCasesPath = path + "/test-cases/integration_test-cases/"
+    testCasesPath = os.path.join(path , "test-cases/integration_test-cases")
     for root, dirs, files in os.walk(testCasesPath):
         dirs[:] = [d for d in dirs if not re.match(dirscombined, d)]
         files[:] = [f for f in files if not re.match(filescombinedexclude, f)]
         #files[:] = [f for f in files if re.match(filescombinedinclude, f)]
         if files:
             files = sorted(files)
-            gitLabUrl = "https://github.com/Virtual-Labs/" + projectName
+            gitLabUrl = os.path.join("https://github.com/Virtual-Labs/", projectName)
             testCasesLink = createMetaFile(root, files, gitLabUrl)
             allTestCasesLink.extend(testCasesLink)
     createTestReport(projectName, gitLabUrl, allTestCasesLink, targetDir)
@@ -71,16 +70,17 @@ def walk_over_path(path, targetDir):
 
 def createMetaFile(root, testCases, gitLabUrl):
     expname = testCases[0].split("_")[0]
-    metaFilePath = root + "/" + expname + "_metafile.org"
+    metaFileName = expname + "_metafile.org"
+    metaFilePath = os.path.join(root, metaFileName)
     filePointer = open(metaFilePath, 'w')
     filePointer.write("S.no\t\tTest case link\n")
     count = 1
-    gitExpUrlPartial = gitLabUrl +  "/blob/master/test-cases/integration_test-cases/" + expname
+    gitExpUrlPartial = os.path.join(gitLabUrl, "blob/master/test-cases/integration_test-cases", expname)
     testCasesLink = []
-    for path in testCases:
-        gitExpUrl = gitExpUrlPartial + "/" + path
+    for testCaseFileName in testCases:
+        gitExpUrl = os.path.join(gitExpUrlPartial, testCaseFileName)
         testCasesLink.append(gitExpUrl)
-        line = str(count) + ". " + "\t" + "[[" + gitExpUrl + "][" + path + "]]" + "\n"
+        line = str(count) + ". " + "\t" + "[[" + gitExpUrl + "][" + testCaseFileName + "]]" + "\n"
         filePointer.write(line)
         count+=1
     filePointer.close()
@@ -116,13 +116,14 @@ def getDateTime():
 def createTestReport(projectName, gitLabUrl, allTestCasesLink, targetDir):
     commit_id = raw_input("Please enter commit id for lab: %s\n" %(projectName))
     date, time = getDateTime()
-    
-    projectDirectory = targetDir + "/"  + projectName
+
+    projectDirectory = os.path.join(targetDir, projectName)
+    testreportDirectory = os.path.join(projectDirectory, "%s_%s" %(date, commit_id))
     make_directory(projectDirectory)
-    testreportDirectory = projectDirectory + "/" + "%s_%s" %(date, commit_id)
     make_directory(testreportDirectory)
 
-    testReportPath = testreportDirectory + "/" + time + "_testreport.org" 
+    testReportName = time + "_testreport.org"
+    testReportPath = os.path.join(testreportDirectory, testReportName) 
     filePointer = open(testReportPath, 'w')
     filePointer.write("* Test Report\n")
     filePointer.write("** Lab Name : %s\n" %(projectName))
