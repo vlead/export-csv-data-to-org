@@ -37,14 +37,27 @@ The model consists of two programs. Programs are implemented in
 Python. 
 
 ** Prerequisite
-1. Install pip
+*** Install xlrd
+You can install xlrd package by either of the two proposed methods below.
+**** Method 1 - via pip
 #+begin_example
 apt-get -y install python-pip
-#+end_example
-2. Install xlrd package
-#+begin_example
 pip install xlrd
 #+end_example
+**** Method 2 - via repository
+1. Add repo to the sources list file =/etc/apt/sources.list=
+#+BEGIN_EXAMPLE
+deb http://us.archive.ubuntu.com/ubuntu vivid main universe
+#+END_EXAMPLE
+2. Update machine after adding repo in sources.
+#+BEGIN_EXAMPLE
+sudo apt-get update
+#+END_EXAMPLE
+3. Install xlrd package.
+#+BEGIN_EXAMPLE
+sudo apt-get install python-xlrd
+#+END_EXAMPLE
+
 ** Run the script
 Tangle out the python code as =exporter.py= from this model file and
 then run the script as follows:

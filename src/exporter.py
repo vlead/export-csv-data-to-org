@@ -32,20 +32,22 @@ def main(argv):
         print "Please provide the path of the file/directory within quotes in command line!"
     else:
         path = argv[1]
-        if os.path.isfile(path) and os.path.exists(path):
-            single_file(path)
-        elif os.path.isdir(path) and os.path.exists(path):
-            walk_over_path(path)
+        if os.path.exists(path):
+	    if os.path.isfile(path):
+	        single_file(path)
+            elif os.path.isdir(path):
+	        walk_over_path(path)
         else:
             print "Provided target does not exists!"
+    return
 
 def single_file(path):
-    basename = os.path.basename(path)
-    name, extension = os.path.splitext(basename)
+    filenameName = os.path.basename(path)
+    name, extension = os.path.splitext(fileName)
     if (extension == '.xlsx'):
         process_lab_file(path, name)
     else:
-        print "Program does not support the provided file format!"
+        print "Program does not support the %s file format." %(extension)
     return
 
 def walk_over_path(path):
