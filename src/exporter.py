@@ -76,7 +76,6 @@ def process_lab_file(path):
     labTestCasesName = []
     for expIndex in range(numberOfExp):
         experiment = book.sheet_by_index(expIndex)
-        #testCases = process_experiment(experiment, expDirectory, gitExpUrl)
         expTestCasesUrl, expTestCasesName = process_experiment(experiment, labDirectory, gitLabUrl)
         labTestCasesUrl.extend(expTestCasesUrl)
         labTestCasesName.extend(expTestCasesName)
@@ -89,13 +88,9 @@ def make_directory(directory):
     return
 
 
-#def process_test_case():
-
-#def process_experiment(experiment, directory, gitExpUrl):
 def process_experiment(experiment, labDirectory, gitLabUrl):
     expName = experiment.name
     expDirectory = os.path.join(labDirectory, expName)
-    make_directory(expDirectory)
 
     gitExpUrl = os.path.join(gitLabUrl, "blob/master/test-cases/integration_test-cases", expName)
 
@@ -113,6 +108,7 @@ def process_experiment(experiment, labDirectory, gitLabUrl):
         prefix = experiment.row(1)[0].value.rstrip(" Lab")
     else:
         prefix = expName
+    make_directory(expDirectory)
     for row in range(1, totalRows):
         testCaseFileName = prefix + "_" + str(row).zfill(2) + "_" + experiment.row(row)[2].value + ".org"            
         filepath = os.path.join(expDirectory, testCaseFileName)
@@ -159,7 +155,7 @@ def reorganize_data_version1(data):
         if(line == '\n' or line == ""):
             continue
         line = line.lstrip(" -")
-        organizedData = organizedData + '  - ' + line + "\n"
+        organizedData+= '  - ' + line + "\n"
     return organizedData
 
 def reorganize_data_version2(data):
@@ -173,7 +169,7 @@ def reorganize_data_version2(data):
         if(line == '\n' or line == ""):
             continue
         line = line.lstrip(" -.1234567890")
-        organizedData = organizedData +  '  ' + str(count) + '. ' + line + "\n"
+        organizedData+= '  ' + str(count) + '. ' + line + "\n"
         count+= 1
     return organizedData
 
