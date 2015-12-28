@@ -98,16 +98,18 @@ def process_experiment(experiment, labDirectory, gitLabUrl):
     expTestCasesUrl = []
     expTestCasesName = []
     feature = experiment.row(1)[2].value
-    testCaseFileName = expName + "_01_" +  feature + ".org"
+
+    if (re.match('system', expName, re.IGNORECASE)):
+        prefix = experiment.row(1)[0].value.rstrip(" Lab")
+    else:
+        prefix = expName
+
+    testCaseFileName = prefix + "_01_" +  feature + ".org"
     linkto =  os.path.join(gitExpUrl, testCaseFileName)
     referlink = "[[" + linkto + "][" + testCaseFileName + "]]"
     postConditions = False
     if (re.match('post conditions', experiment.row(0)[12].value, re.IGNORECASE)):
         postConditions = True
-    if (re.match('system', expName, re.IGNORECASE)):
-        prefix = experiment.row(1)[0].value.rstrip(" Lab")
-    else:
-        prefix = expName
     make_directory(expDirectory)
     for row in range(1, totalRows):
         testCaseFileName = prefix + "_" + str(row).zfill(2) + "_" + experiment.row(row)[2].value + ".org"            
