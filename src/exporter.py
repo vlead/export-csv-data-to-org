@@ -191,18 +191,22 @@ def reorganize_teststeps(data):
     return organizedData
 
 def write_to_file(filepath, data):
-    filepointer = open(filepath, 'w')
-    filepointer.write(data['author'].encode("utf-8"))
-    filepointer.write(data['date'].encode("utf-8"))
-    filepointer.write(data['environment'].encode("utf-8"))
-    filepointer.write(data['objective'].encode("utf-8"))
-    filepointer.write(data['preConditions'].encode("utf-8"))
-    filepointer.write(data['postConditions'].encode("utf-8"))
-    filepointer.write(data['testSteps'].encode("utf-8"))
-    filepointer.write(data['result'].encode("utf-8"))
-    filepointer.write(data['review_comments'].encode("utf-8"))
-    filepointer.write("\n")
-    filepointer.close()
+    try:
+        filepointer = open(filepath, 'w')
+        filepointer.write(data['author'].encode("utf-8"))
+        filepointer.write(data['date'].encode("utf-8"))
+        filepointer.write(data['environment'].encode("utf-8"))
+        filepointer.write(data['objective'].encode("utf-8"))
+        filepointer.write(data['preConditions'].encode("utf-8"))
+        filepointer.write(data['postConditions'].encode("utf-8"))
+        filepointer.write(data['testSteps'].encode("utf-8"))
+        filepointer.write(data['result'].encode("utf-8"))
+        filepointer.write(data['review_comments'].encode("utf-8"))
+        filepointer.write("\n")
+        filepointer.close()
+    except:
+        print "Not able to open file to write"
+	return
     return
 
 def createMetaFile(testCasesUrl, testCasesName, metaFilePath):
