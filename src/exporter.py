@@ -25,6 +25,7 @@ expnameColumnwidth = 30
 testcasenameColumnwidth = 50
 passfailColumnwidth = 10
 defectColumnwidth = 15
+gitHubBaseUrl = "https://github.com/Virtual-Labs"
 
 
 def main(argv):
@@ -64,22 +65,21 @@ def walk_over_path(path):
 def process_lab_file(path):
     try:
         book = xlrd.open_workbook(path)
+	labDirectory, extension = os.path.splitext(path)
+        labName = os.path.basename(labDirectory)
+        make_directory(labDirectory)
+        numberOfExp = book.nsheets
+        gitLabUrl = os.path.join(gitHubBaseUrl, labName)
+        labTestCasesUrl = []
+        labTestCasesName = []
+        for expIndex in range(numberOfExp):
+            experiment = book.sheet_by_index(expIndex)
+            expTestCasesUrl, expTestCasesName = process_experiment(experiment, labDirectory, gitLabUrl)
+            labTestCasesUrl.extend(expTestCasesUrl)
+            labTestCasesName.extend(expTestCasesName)
+        createTestReport(labDirectory, labTestCasesUrl, labTestCasesName, labName, gitLabUrl)
     except:
         print "%s does not have read permission" %(path)
-        return
-    labDirectory, extension = os.path.splitext(path)
-    labName = os.path.basename(labDirectory)
-    make_directory(labDirectory)
-    numberOfExp = book.nsheets
-    gitLabUrl = os.path.join("https://github.com/Virtual-Labs/", labName)
-    labTestCasesUrl = []
-    labTestCasesName = []
-    for expIndex in range(numberOfExp):
-        experiment = book.sheet_by_index(expIndex)
-        expTestCasesUrl, expTestCasesName = process_experiment(experiment, labDirectory, gitLabUrl)
-        labTestCasesUrl.extend(expTestCasesUrl)
-        labTestCasesName.extend(expTestCasesName)
-    createTestReport(labDirectory, labTestCasesUrl, labTestCasesName, labName, gitLabUrl)
     return
 
 def make_directory(directory):
@@ -87,42 +87,42 @@ def make_directory(directory):
             os.makedirs(directory)
     return
 
+# One sheet represents one experiment
+def process_experiment(sheet, labDirectory, gitLabUrl):
+    sheetName = sheet.name
+    expDirectory = os.path.join(labDirectory, sheetName)
+    gitMiddleUrl = "blob/master/test-cases/integration_test-cases"
+    gitExpUrl = os.path.join(gitLabUrl, gitMiddleUrl, sheetName)
 
-def process_experiment(experiment, labDirectory, gitLabUrl):
-    expName = experiment.name
-    expDirectory = os.path.join(labDirectory, expName)
-
-    gitExpUrl = os.path.join(gitLabUrl, "blob/master/test-cases/integration_test-cases", expName)
-
-    totalRows = experiment.nrows
+    totalRows = sheet.nrows
     expTestCasesUrl = []
     expTestCasesName = []
-    feature = experiment.row(1)[2].value
+    feature = sheet.row(1)[2].value
 
-    if (re.match('system', expName, re.IGNORECASE)):
-        prefix = experiment.row(1)[0].value.rstrip(" Lab")
+    if (re.match('system', sheetName, re.IGNORECASE)):
+        prefix = sheet.row(1)[0].value.rstrip(" Lab")
     else:
-        prefix = expName
+        prefix = sheetName
 
     testCaseFileName = prefix + "_01_" +  feature + ".org"
     linkto =  os.path.join(gitExpUrl, testCaseFileName)
     referlink = "[[" + linkto + "][" + testCaseFileName + "]]"
     postConditions = False
-    if (re.match('post conditions', experiment.row(0)[12].value, re.IGNORECASE)):
+    if (re.match('post conditions', sheet.row(0)[12].value, re.IGNORECASE)):
         postConditions = True
     make_directory(expDirectory)
     for row in range(1, totalRows):
-        testCaseFileName = prefix + "_" + str(row).zfill(2) + "_" + experiment.row(row)[2].value + ".org"            
+        testCaseFileName = prefix + "_" + str(row).zfill(2) + "_" + sheet.row(row)[2].value + ".org"            
         filepath = os.path.join(expDirectory, testCaseFileName)
         gitTestCaseUrl = os.path.join(gitExpUrl, urllib.quote(testCaseFileName))
         expTestCasesUrl.append(gitTestCaseUrl)
         expTestCasesName.append(testCaseFileName)
-        data =  org_data(experiment.row(row), row, postConditions)
+        data =  org_data(sheet.row(row), row, postConditions)
         if(row > 1):
             data['preConditions'] = "* Pre conditions\n  - Refer to first test case " + referlink + "\n\n"
         write_to_file(filepath, data)
 
-    metaFileName = expName + "_metafile.org"
+    metaFileName = sheetName + "_metafile.org"
     metaFilePath = os.path.join(expDirectory, metaFileName)
     createMetaFile(expTestCasesUrl, expTestCasesName, metaFilePath)
     return expTestCasesUrl, expTestCasesName
@@ -206,7 +206,7 @@ def write_to_file(filepath, data):
         filepointer.close()
     except:
         print "Not able to open file to write"
-	return
+        filepointer.close()
     return
 
 def createMetaFile(testCasesUrl, testCasesName, metaFilePath):
